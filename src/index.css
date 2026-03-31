@@ -1,0 +1,117 @@
+:root {
+  /* Duolingo-like Light Mode Palette */
+  --bg-color: #F3F4F6; /* Gray 100 */
+  --surface-color: #FFFFFF;
+  --text-main: #111827; /* Gray 900 */
+  --text-light: #6B7280; /* Gray 500 */
+  
+  --color-primary: #3B82F6; /* Blue 500 */
+  --color-primary-dark: #2563EB;
+  
+  --color-success: #22C55E; /* Green 500 */
+  --color-success-dark: #16A34A;
+  
+  --color-error: #EF4444; /* Red 500 */
+  --color-error-dark: #DC2626;
+  
+  --color-warning: #F59E0B; /* Amber 500 */
+  --color-warning-dark: #D97706;
+
+  /* Geometry & Physics */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-float: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Deep shadows for chubby buttons */
+  --shadow-button-primary: 0px 4px 0px var(--color-primary-dark);
+  --shadow-button-success: 0px 4px 0px var(--color-success-dark);
+  --shadow-button-error: 0px 4px 0px var(--color-error-dark);
+  --shadow-button-neutral: 0px 4px 0px #D1D5DB; /* Gray 300 */
+  
+  font-family: 'Nunito', 'Quicksand', system-ui, -apple-system, sans-serif;
+}
+
+/* Reset and Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.5;
+  font-size: 16px;
+  overflow-x: hidden;
+  /* Anti-aliasing */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography specific for Law Reader */
+.font-inter {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Base button styles */
+button {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Chubby Button Common Utility */
+.btn-chubby {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  padding: 14px 24px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+.btn-chubby:active {
+  transform: translateY(4px);
+  /* The shadow height shrinks physically in Framer Motion or via specific class */
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+  box-shadow: var(--shadow-button-primary);
+}
+.btn-primary:active {
+  box-shadow: 0px 0px 0px var(--color-primary-dark);
+}
+
+.btn-success {
+  background-color: var(--color-success);
+  color: white;
+  box-shadow: var(--shadow-button-success);
+}
+.btn-success:active {
+  box-shadow: 0px 0px 0px var(--color-success-dark);
+}
+
+/* App Container for Mobile View */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0 auto;
+  position: relative;
+  /* Limit width on desktop to simulate mobile view comfortably */
+  max-width: 480px;
+  background-color: var(--bg-color);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
