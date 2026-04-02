@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import OnboardingFlow from './pages/onboarding/OnboardingFlow';
@@ -6,6 +7,8 @@ import StudySelect from './pages/study/StudySelect';
 import StudySwipeMode from './pages/study/StudySwipeMode';
 import ItemsPage from './pages/items/ItemsPage';
 import LawViva from './pages/law/LawViva';
+import AuthPage from './pages/auth/AuthPage';
+import { useAuthStore } from './services/authStore';
 
 // Pages with bottom nav
 const NAV_PAGES = ['/home', '/select', '/items', '/law'];
@@ -40,7 +43,7 @@ function BottomNavbar() {
             style={{
               flex: 1, padding: '12px 0 10px',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-              backgroundColor: 'transparent',
+              backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
               borderTop: `2px solid ${isActive ? '#EF4444' : 'transparent'}`,
               transition: 'border-color 0.2s',
             }}
@@ -66,23 +69,29 @@ function BottomNavbar() {
   );
 }
 
-function App() {
-  return (
-    <HashRouter>
-      <AppContent />
-    </HashRouter>
-  );
-}
-
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const showNav = NAV_PAGES.includes(location.pathname);
+  const { refreshSession } = useAuthStore();
+
+  // Try to restore session from refresh token cookie on first load
+  useEffect(() => {
+    refreshSession().catch(() => {/* no-op — guest play is fine */});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div style={{ margin: '0 auto', maxWidth: 600, minHeight: '100vh', position: 'relative', overflowX: 'hidden', paddingBottom: showNav ? 72 : 0, backgroundColor: '#0F172A', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}>
+    <div style={{
+      margin: '0 auto', maxWidth: 600, minHeight: '100vh',
+      position: 'relative', overflowX: 'hidden',
+      paddingBottom: showNav ? 72 : 0,
+      backgroundColor: '#0F172A',
+      boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+    }}>
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/"           element={<Navigate to="/onboarding" replace />} />
+          <Route path="/auth"       element={<AuthPage onSuccess={() => navigate('/onboarding')} />} />
           <Route path="/onboarding" element={<OnboardingFlow />} />
           <Route path="/home"       element={<HomeLoop />} />
           <Route path="/select"     element={<StudySelect />} />
@@ -93,6 +102,14 @@ function AppContent() {
       </AnimatePresence>
       <BottomNavbar />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <HashRouter>
+      <AppContent />
+    </HashRouter>
   );
 }
 

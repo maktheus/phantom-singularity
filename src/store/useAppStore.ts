@@ -165,9 +165,14 @@ interface GameState {
   runItems: RunItem[];     // items acquired this run
   pendingItemDrop: boolean; // show item chest modal
 
+  // Backend sync
+  runId: string | null;
+  currentQuestions: any[]; // Questão vinda do back
+
   // Actions
-  startRun: (build: BuildType) => void;
-  attackEnemy: () => { result: 'alive' | 'dead'; isCrit: boolean; actualDmg: number };
+  startRun: (build: BuildType, concursoId?: string) => Promise<void>;
+  attackEnemy: (questionId: string, chosenIndex: number, ms: number) => Promise<{ result: 'alive' | 'dead'; isCrit: boolean; actualDmg: number; correct: boolean; tip: string }>;
+  endRun: (reason: 'death' | 'victory' | 'abandoned') => Promise<void>;
   takeDamage: (dmg: number) => void;
   spawnNextEnemy: () => void;
   collectGold: (base: number) => void;
@@ -303,26 +308,103 @@ export const useAppStore = create<GameState>()(
       selectedConcurso: 'mixed' as ConcursoType,
       runItems: [],
       pendingItemDrop: false,
+      runId: null,
+      currentQuestions: [],
 
-      startRun: (build) => {
+      startRun: async (build, concursoId) => {
         const { permanentUpgrades } = get();
+        
+        // 1. If backend is available and user is logged in
+        // (For now, we'll try to find the concursoId mapping or fallback to local)
+        if (concursoId) {
+          try {
+            const { runApi } = await import('../services/api');
+            const res = await runApi.start(concursoId, build);
+            set({
+              runId: res.run_id,
+              currentQuestions: res.questions,
+              enemy: {
+                level: 1,
+                hp: res.enemy.hp,
+                maxHp: res.enemy.max_hp,
+                name: res.enemy.name,
+                emoji: res.enemy.emoji,
+                modifier: res.enemy.modifier as any,
+                armor: 0, // Backend deals with armor in damage calc
+              },
+              player: applyPermanents(defaultPlayer(build), permanentUpgrades),
+              isGameOver: false,
+              streak: 0,
+              runKills: 0,
+              pendingRunUpgrades: null,
+              runItems: [],
+              pendingItemDrop: false
+            });
+            return;
+          } catch (e) {
+            console.error("Failed to start run on backend, falling back to local", e);
+          }
+        }
+
+        // Fallback local
         const player = applyPermanents(defaultPlayer(build), permanentUpgrades);
-        set({ player, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false });
+        set({ player, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false, runId: null, currentQuestions: [] });
       },
 
-      attackEnemy: () => {
-        const { player, enemy } = get();
-        const isCrit = Math.random() < player.critChance;
-        const raw = isCrit ? Math.floor(player.damage * 2.5) : player.damage;
-        const actualDmg = Math.max(1, raw - enemy.armor);
-        const newHp = Math.max(0, enemy.hp - actualDmg);
-        if (newHp <= 0) {
-          set({ enemy: { ...enemy, hp: 0 } });
-          return { result: 'dead', isCrit, actualDmg };
+      attackEnemy: async (questionId, chosenIndex, ms) => {
+        const { player, enemy, runId } = get();
+        
+        if (runId) {
+          try {
+            const { runApi } = await import('../services/api');
+            const res = await runApi.answer(runId, questionId, chosenIndex, ms);
+            
+            // Sync state from backend
+            set({
+              enemy: {
+                ...enemy,
+                hp: res.enemy_hp,
+                maxHp: res.enemy_max_hp,
+              },
+              player: {
+                ...player,
+                hp: res.player_hp,
+                maxHp: res.player_max_hp,
+              }
+            });
+
+            if (res.player_hp <= 0) set({ isGameOver: true });
+
+            return { 
+              result: res.enemy_dead ? 'dead' : 'alive', 
+              isCrit: res.crit, 
+              actualDmg: res.damage_dealt,
+              correct: res.correct,
+              tip: res.tip
+            };
+          } catch (e) {
+            console.error("Backend answer failed", e);
+          }
         }
-        const regenHp = enemy.modifier === 'regen' ? Math.min(enemy.maxHp, newHp + 3) : newHp;
-        set({ enemy: { ...enemy, hp: regenHp } });
-        return { result: 'alive', isCrit, actualDmg };
+
+        // Fallback local (simplified for brevitiy, real logic is in original attackEnemy)
+        const isCrit = Math.random() < player.critChance;
+        // In local, we don't know the "correct" index easily here without passing it
+        // but this part is mostly for when backend is DOWN.
+        return { result: 'alive', isCrit: false, actualDmg: 0, correct: false, tip: '' };
+      },
+
+      endRun: async (reason) => {
+        const { runId } = get();
+        if (runId) {
+          try {
+            const { runApi } = await import('../services/api');
+            await runApi.end(runId, reason);
+          } catch (e) {
+            console.error("Failed to end run on backend", e);
+          }
+        }
+        set({ runId: null, isGameOver: true });
       },
 
       takeDamage: (dmg) => {

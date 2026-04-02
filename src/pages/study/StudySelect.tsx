@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import type { ConcursoType } from '../../store/useAppStore';
@@ -43,9 +44,16 @@ export default function StudySelect() {
   const navigate = useNavigate();
   const { selectedConcurso, setConcurso, startRun, player } = useAppStore();
 
-  const handleStartRun = (build: 'warrior' | 'mage' | 'rogue') => {
-    startRun(build);
-    navigate('/study');
+  const [isStarting, setIsStarting] = useState(false);
+
+  const handleStartRun = async (build: 'warrior' | 'mage' | 'rogue') => {
+    setIsStarting(true);
+    try {
+      await startRun(build, selectedConcurso);
+      navigate('/study');
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   // Which concurso is already selected
@@ -126,12 +134,14 @@ export default function StudySelect() {
             <motion.button
               key={b.build}
               whileTap={{ scale: 0.97 }}
+              disabled={isStarting}
               onClick={() => handleStartRun(b.build)}
               style={{
                 padding: '16px 20px', borderRadius: 14, backgroundColor: '#1E293B',
                 border: `2px solid ${b.color}40`, color: 'white', textAlign: 'left',
                 display: 'flex', alignItems: 'center', gap: 16,
                 boxShadow: `0 4px 0 #0F172A`,
+                opacity: isStarting ? 0.6 : 1,
               }}
             >
               <span style={{ fontSize: '2.8rem', flexShrink: 0 }}>{b.emoji}</span>
@@ -142,7 +152,7 @@ export default function StudySelect() {
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 600, marginTop: 4 }}>{b.desc}</div>
               </div>
-              <span style={{ fontSize: '1.5rem' }}>▶</span>
+              <span style={{ fontSize: '1.5rem' }}>{isStarting ? '⌛' : '▶'}</span>
             </motion.button>
           ))}
         </div>
