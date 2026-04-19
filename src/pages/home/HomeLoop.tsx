@@ -86,8 +86,11 @@ export default function HomeLoop() {
 
   const buildInfo = BUILD_INFO[player.build] || BUILD_INFO.warrior;
 
+  // CTA height ~76px + nav height 72px = ~148px total fixed bottom area
+  const BOTTOM_SAFE_PAD = 160;
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0F172A', color: 'white', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100dvh', backgroundColor: '#0F172A', color: 'white', paddingBottom: BOTTOM_SAFE_PAD }}>
 
       {/* ── Camp Scene ── */}
       <CampScene />
@@ -233,13 +236,24 @@ export default function HomeLoop() {
         </div>
       </div>
 
-      {/* ── Big Battle CTA ── */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '16px 24px', backgroundColor: '#0F172A', borderTop: '1px solid #1E293B' }}>
+      {/* ── Big Battle CTA ── positioned ABOVE the BottomNavbar (72px) */}
+      <div style={{
+        position: 'fixed',
+        bottom: 72,   /* sits directly above the bottom nav */
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: 600,
+        padding: '12px 20px',
+        backgroundColor: '#0F172A',
+        borderTop: '1px solid #1E293B',
+        zIndex: 100,
+      }}>
         <button onClick={() => setShowBuildSelect(true)}
-          style={{ width: '100%', padding: '20px', backgroundColor: '#EF4444', color: 'white',
-            fontSize: '1.2rem', fontWeight: 900, borderRadius: 16, boxShadow: '0 6px 0 #B91C1C',
+          style={{ width: '100%', padding: '18px', backgroundColor: '#EF4444', color: 'white',
+            fontSize: '1.15rem', fontWeight: 900, borderRadius: 16, boxShadow: '0 6px 0 #B91C1C',
             display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
-          <Swords size={26} /> Iniciar Nova Run
+          <Swords size={24} /> Iniciar Nova Run
         </button>
       </div>
     </div>

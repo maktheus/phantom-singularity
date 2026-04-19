@@ -303,7 +303,7 @@ export default function StudySwipeMode() {
   const navigate = useNavigate();
   const {
     player, enemy, gold, streak, isGameOver, pendingRunUpgrades, pendingItemDrop,
-    attackEnemy, spawnNextEnemy, collectGold,
+    attackEnemy, localAttack, spawnNextEnemy, collectGold,
     respawn, incrementStreak, resetStreak, incrementQuestions,
     chooseRunUpgrade, skipRunUpgrade, pickItem, dismissItemDrop,
     runItems, selectedConcurso: storeConcurso,
@@ -406,19 +406,45 @@ export default function StudySwipeMode() {
         setCombatLog(`💢 Errou! ${enemy.name} contra-ataca!`);
       }
     } else {
-      // Offline fallback
-      if (opt.isCorrect) {
-        // ... (keep original offline logic or just assume offline is rare)
-        setCombatLog("Modo Offline: Acertou!");
+      // ── Offline combat — full local resolution ──
+      const { result, isCrit, actualDmg, correct } = localAttack(opt.isCorrect);
+
+      if (correct) {
+        setAttackIsCrit(isCrit);
+        setAttackVisible(true);
+        setTimeout(() => setAttackVisible(false), 450);
+        setEnemyFlash(true);
+        setTimeout(() => { setEnemyFlash(false); setEnemyShake(true); }, 80);
+        setTimeout(() => setEnemyShake(false), 480);
+        addDmg(actualDmg, isCrit);
+        playSound(isCrit ? 'crit' : 'hit');
+        triggerFlash(isCrit ? '#78350F' : '#1E3A5F');
+        incrementStreak();
+
+        if (result === 'dead') {
+          const base = 10 + enemy.level * 3;
+          collectGold(base);
+          addCoins(Math.min(10, 3 + Math.floor(enemy.level / 2)));
+          setTimeout(() => { playSound('gold'); playSound('death'); playSound('levelup'); }, 150);
+          setCombatLog(`☠️ ${enemy.name} derrotado!`);
+        } else {
+          setCombatLog(isCrit ? `⚡ CRÍTICO! ${actualDmg} de dano!` : `⚔️ Acertou! ${actualDmg} de dano.`);
+        }
       } else {
-        setCombatLog("Modo Offline: Errou!");
+        playSound('damage');
+        triggerFlash('#450A0A');
+        setPlayerShake(true);
+        setTimeout(() => setPlayerShake(false), 500);
+        resetStreak();
+        setCombatLog(`💢 Errou! ${enemy.name} contra-ataca! (-${actualDmg} HP)`);
       }
     }
   };
 
   const handleContinue = () => {
-    const defeated = selectedIdx !== null && shuffledOpts[selectedIdx]?.isCorrect && enemy.hp === 0;
-    if (defeated) spawnNextEnemy();
+    const answerWasCorrect = selectedIdx !== null && shuffledOpts[selectedIdx]?.isCorrect;
+    const enemyDefeated = answerWasCorrect && enemy.hp <= 0;
+    if (enemyDefeated) spawnNextEnemy();
     setSelectedIdx(null);
     setQIndex(q => q + 1);
     setCombatLog('');
@@ -577,16 +603,28 @@ export default function StudySwipeMode() {
         </AnimatePresence>
       </div>
 
-      {/* Continue Button */}
+      {/* Continue Button — constrained to the 600px container */}
       {selectedIdx !== null && !isGameOver && !pendingRunUpgrades && (
-        <motion.div initial={{ y: 100 }} animate={{ y: 0 }}
-          style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '14px 18px',
-            backgroundColor: '#0F172A', borderTop: '1px solid #1E293B', zIndex: 50 }}>
+        <motion.div
+          initial={{ y: 100 }} animate={{ y: 0 }}
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            maxWidth: 600,
+            padding: '14px 18px',
+            paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
+            backgroundColor: '#0F172A',
+            borderTop: '1px solid #1E293B',
+            zIndex: 50,
+          }}>
           <button onClick={handleContinue}
             style={{ width: '100%', padding: '17px', borderRadius: 14, fontWeight: 900, fontSize: '1.1rem',
               backgroundColor: selectedOpt?.isCorrect ? '#22C55E' : '#3B82F6',
               color: 'white', boxShadow: `0 5px 0 ${selectedOpt?.isCorrect ? '#15803D' : '#1D4ED8'}` }}>
-            {enemy.hp === 0 && selectedOpt?.isCorrect ? `🎁 Escolher Power-Up! (Lv.${enemy.level + 1})` : 'Continuar →'}
+            {enemy.hp <= 0 && selectedOpt?.isCorrect ? `🎁 Escolher Power-Up! (Lv.${enemy.level + 1})` : 'Continuar →'}
           </button>
         </motion.div>
       )}
@@ -607,7 +645,13 @@ export default function StudySwipeMode() {
                 Derrotado por: <strong style={{ color: 'white' }}>{enemy.emoji} {enemy.name} Lv.{enemy.level}</strong>
               </p>
               <p style={{ color: '#FBBF24', fontWeight: 800, fontSize: '1.2rem', marginBottom: 36 }}>🪙 {gold} de ouro preservado</p>
-              <button onClick={() => { respawn(); setSelectedIdx(null); setQIndex(0); setCombatLog(''); }}
+              <button onClick={() => {
+                  respawn();
+                  setSelectedIdx(null);
+                  setQIndex(0);
+                  setCombatLog('');
+                  navigate('/home');  // actually go back to base
+                }}
                 style={{ padding: '18px 40px', backgroundColor: '#3B82F6', color: 'white', borderRadius: 14,
                   fontWeight: 900, fontSize: '1.2rem', boxShadow: '0 6px 0 #1D4ED8', width: '100%' }}>
                 🏕️ Voltar à Base

@@ -161,6 +161,9 @@ interface GameState {
   pendingRunUpgrades: RunPowerUp[] | null;
   selectedConcurso: ConcursoType;
 
+  // Onboarding flag — skip onboarding for returning users
+  hasOnboarded: boolean;
+
   // VS-style items
   runItems: RunItem[];     // items acquired this run
   pendingItemDrop: boolean; // show item chest modal
@@ -170,8 +173,11 @@ interface GameState {
   currentQuestions: any[]; // Questão vinda do back
 
   // Actions
+  setHasOnboarded: () => void;
   startRun: (build: BuildType, concursoId?: string) => Promise<void>;
   attackEnemy: (questionId: string, chosenIndex: number, ms: number) => Promise<{ result: 'alive' | 'dead'; isCrit: boolean; actualDmg: number; correct: boolean; tip: string }>;
+  /** Full offline combat: updates enemy HP + player HP locally, returns combat result */
+  localAttack: (isCorrect: boolean, optionTip?: string) => { result: 'alive' | 'dead'; isCrit: boolean; actualDmg: number; correct: boolean };
   endRun: (reason: 'death' | 'victory' | 'abandoned') => Promise<void>;
   takeDamage: (dmg: number) => void;
   spawnNextEnemy: () => void;
@@ -306,10 +312,13 @@ export const useAppStore = create<GameState>()(
       permanentUpgrades: DEFAULT_PERMANENTS,
       pendingRunUpgrades: null,
       selectedConcurso: 'mixed' as ConcursoType,
+      hasOnboarded: false,
       runItems: [],
       pendingItemDrop: false,
       runId: null,
       currentQuestions: [],
+
+      setHasOnboarded: () => set({ hasOnboarded: true }),
 
       startRun: async (build, concursoId) => {
         const { permanentUpgrades } = get();
@@ -387,11 +396,31 @@ export const useAppStore = create<GameState>()(
           }
         }
 
-        // Fallback local (simplified for brevitiy, real logic is in original attackEnemy)
-        const isCrit = Math.random() < player.critChance;
-        // In local, we don't know the "correct" index easily here without passing it
-        // but this part is mostly for when backend is DOWN.
+        // Fallback when backend is completely unreachable
+        // (use localAttack for proper offline combat)
         return { result: 'alive', isCrit: false, actualDmg: 0, correct: false, tip: '' };
+      },
+
+      localAttack: (isCorrect) => {
+        const { player, enemy } = get();
+        if (isCorrect) {
+          const rolled = Math.random() < player.critChance;
+          const baseDmg = Math.max(1, Math.floor(player.damage * (rolled ? 2 : 1)));
+          // Apply armor reduction
+          const effectiveDmg = enemy.modifier === 'armored'
+            ? Math.max(1, baseDmg - enemy.armor)
+            : baseDmg;
+          const newEnemyHp = Math.max(0, enemy.hp - effectiveDmg);
+          set({ enemy: { ...enemy, hp: newEnemyHp } });
+          return { result: newEnemyHp === 0 ? 'dead' as const : 'alive' as const, isCrit: rolled, actualDmg: effectiveDmg, correct: true };
+        } else {
+          // Enemy counterattack
+          const enemyDmg = Math.max(1, Math.floor(3 + enemy.level * 2));
+          const newHp = Math.max(0, player.hp - enemyDmg);
+          if (newHp <= 0) set({ player: { ...player, hp: 0 }, isGameOver: true });
+          else set({ player: { ...player, hp: newHp } });
+          return { result: 'alive' as const, isCrit: false, actualDmg: enemyDmg, correct: false };
+        }
       },
 
       endRun: async (reason) => {

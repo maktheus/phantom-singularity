@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi, setAccessToken, UserOut, PlayerStateOut, ApiError } from './api';
+import { authApi, setAccessToken } from './api';
+import type { UserOut, PlayerStateOut, ApiError } from './api';
 
 interface AuthState {
   user: UserOut | null;
@@ -24,7 +25,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
-      login: async (email, password) => {
+      login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
           const res = await authApi.login(email, password);
@@ -38,7 +39,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      register: async (name, email, password) => {
+      register: async (name: string, email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
           const res = await authApi.register(name, email, password);
@@ -52,7 +53,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      loginWithGoogle: async (idToken) => {
+      loginWithGoogle: async (idToken: string) => {
         set({ isLoading: true, error: null });
         try {
           const res = await authApi.google(idToken);
@@ -88,6 +89,9 @@ export const useAuthStore = create<AuthState>()(
 
       clearError: () => set({ error: null }),
     }),
-    { name: 'phantom-auth-v1', partialise: (s) => ({ user: s.user }) }
-  ) as any
+    {
+      name: 'phantom-auth-v1',
+      partialize: (s: AuthState) => ({ user: s.user }),
+    }
+  )
 );

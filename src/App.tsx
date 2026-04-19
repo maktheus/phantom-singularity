@@ -9,9 +9,12 @@ import ItemsPage from './pages/items/ItemsPage';
 import LawViva from './pages/law/LawViva';
 import AuthPage from './pages/auth/AuthPage';
 import { useAuthStore } from './services/authStore';
+import { useAppStore } from './store/useAppStore';
 
-// Pages with bottom nav
+// Pages that show the bottom navigation bar
 const NAV_PAGES = ['/home', '/select', '/items', '/law'];
+// Height of bottom nav bar (px) — used to offset CTA buttons above it
+export const NAV_HEIGHT = 72;
 
 const NAV_ITEMS = [
   { path: '/home',   icon: '⛺', label: 'Base'    },
@@ -32,7 +35,7 @@ function BottomNavbar() {
       backgroundColor: '#0F172A',
       borderTop: '2px solid #1E293B',
       display: 'flex', zIndex: 1000,
-      paddingBottom: 'env(safe-area-inset-bottom)',
+      paddingBottom: 'max(env(safe-area-inset-bottom), 4px)',
     }}>
       {NAV_ITEMS.map(item => {
         const isActive = location.pathname === item.path;
@@ -74,6 +77,7 @@ function AppContent() {
   const navigate = useNavigate();
   const showNav = NAV_PAGES.includes(location.pathname);
   const { refreshSession } = useAuthStore();
+  const hasOnboarded = useAppStore(s => s.hasOnboarded);
 
   // Try to restore session from refresh token cookie on first load
   useEffect(() => {
@@ -82,16 +86,22 @@ function AppContent() {
 
   return (
     <div style={{
-      margin: '0 auto', maxWidth: 600, minHeight: '100vh',
-      position: 'relative', overflowX: 'hidden',
-      paddingBottom: showNav ? 72 : 0,
+      margin: '0 auto',
+      maxWidth: 600,
+      minHeight: '100dvh',
+      position: 'relative',
+      overflowX: 'hidden',
+      /* Bottom padding: nav height + safe-area when nav is visible */
+      paddingBottom: showNav ? NAV_HEIGHT : 0,
       backgroundColor: '#0F172A',
-      boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+      boxShadow: '0 0 40px rgba(0,0,0,0.7)',
     }}>
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          <Route path="/"           element={<Navigate to="/onboarding" replace />} />
-          <Route path="/auth"       element={<AuthPage onSuccess={() => navigate('/onboarding')} />} />
+          {/* Smart root redirect: skip onboarding for returning users */}
+          <Route path="/"           element={<Navigate to={hasOnboarded ? '/home' : '/onboarding'} replace />} />
+          {/* Auth success always lands on home (onboarding already done) */}
+          <Route path="/auth"       element={<AuthPage onSuccess={() => navigate('/home')} />} />
           <Route path="/onboarding" element={<OnboardingFlow />} />
           <Route path="/home"       element={<HomeLoop />} />
           <Route path="/select"     element={<StudySelect />} />

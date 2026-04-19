@@ -2,19 +2,26 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Target, Zap } from 'lucide-react';
+import { useAppStore } from '../../store/useAppStore';
 
 export default function OnboardingFlow() {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
+  const setHasOnboarded = useAppStore(s => s.setHasOnboarded);
   const nextStep = () => setStep(s => s + 1);
 
+  const handleFinish = () => {
+    setHasOnboarded();   // mark as done so root never shows onboarding again
+    navigate('/home');
+  };
+
   return (
-    <div style={{ padding: '24px', minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#0F172A', color: 'white' }}>
+    <div style={{ padding: '24px', minHeight: '100dvh', display: 'flex', flexDirection: 'column', backgroundColor: '#0F172A', color: 'white' }}>
       <AnimatePresence mode="wait">
         {step === 0 && <WelcomeStep key="s0" onNext={nextStep} />}
         {step === 1 && <GoalStep key="s1" onNext={nextStep} />}
         {step === 2 && <TimeStep key="s2" onNext={nextStep} />}
-        {step === 3 && <RevealStep key="s3" onFinish={() => navigate('/home')} />}
+        {step === 3 && <RevealStep key="s3" onFinish={handleFinish} />}
       </AnimatePresence>
     </div>
   );
