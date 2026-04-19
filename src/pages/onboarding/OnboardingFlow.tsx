@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Target, Zap, Clock, Trophy } from 'lucide-react';
+import { Target, Zap, Trophy } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
 const TOTAL_STEPS = 4;
