@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Swords, Repeat } from 'lucide-react';
 import { useAppStore, permanentCost } from '../../store/useAppStore';
 import type { BuildType } from '../../store/useAppStore';
+import ChestOpenModal from '../../components/ChestOpenModal';
+import type { CosmeticItem } from '../../data/cosmeticsDb';
 import '../../pixelart.css';
 
 // ─── Animated Pixel Camp Scene ─────────────────────────────────────────────────
@@ -69,8 +71,15 @@ const BUILD_INFO = {
 export default function HomeLoop() {
   const navigate = useNavigate();
   const { player, gold, killCount, totalQuestionsAnswered, permanentUpgrades, purchasePermanent, startRun } = useAppStore();
+  const pendingCosmeticChest = useAppStore(s => s.pendingCosmeticChest);
+  const setPendingCosmeticChest = useAppStore(s => s.setPendingCosmeticChest);
   const [buyFeedback, setBuyFeedback] = useState<{ id: string; ok: boolean } | null>(null);
   const [showBuildSelect, setShowBuildSelect] = useState(false);
+
+  const handleChestClose = (_item: CosmeticItem) => {
+    setPendingCosmeticChest(false);
+    navigate('/hero');
+  };
 
   const handleBuy = (id: string) => {
     const ok = purchasePermanent(id);
@@ -94,6 +103,13 @@ export default function HomeLoop() {
 
       {/* ── Camp Scene ── */}
       <CampScene />
+
+      {/* ── Chest Open Modal ── */}
+      <AnimatePresence>
+        {pendingCosmeticChest && (
+          <ChestOpenModal onClose={handleChestClose} />
+        )}
+      </AnimatePresence>
 
       {/* ── Build Select Modal ── */}
       <AnimatePresence>

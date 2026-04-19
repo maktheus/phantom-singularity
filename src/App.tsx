@@ -8,18 +8,20 @@ import StudySwipeMode from './pages/study/StudySwipeMode';
 import ItemsPage from './pages/items/ItemsPage';
 import LawViva from './pages/law/LawViva';
 import AuthPage from './pages/auth/AuthPage';
+import SettingsPage from './pages/settings/SettingsPage';
+import CosmeticsPage from './pages/cosmetics/CosmeticsPage';
 import { useAuthStore } from './services/authStore';
 import { useAppStore } from './store/useAppStore';
 
 // Pages that show the bottom navigation bar
-const NAV_PAGES = ['/home', '/select', '/items', '/law'];
+const NAV_PAGES = ['/home', '/select', '/hero', '/law'];
 // Height of bottom nav bar (px) — used to offset CTA buttons above it
 export const NAV_HEIGHT = 72;
 
 const NAV_ITEMS = [
   { path: '/home',   icon: '⛺', label: 'Base'    },
   { path: '/select', icon: '📚', label: 'Estudar' },
-  { path: '/items',  icon: '🎒', label: 'Mochila' },
+  { path: '/hero',   icon: '👤', label: 'Herói'   },
   { path: '/law',    icon: '⚖️',  label: 'Leis'   },
 ];
 
@@ -38,6 +40,7 @@ function BottomNavbar() {
       display: 'flex', zIndex: 1000,
       paddingBottom: 'max(env(safe-area-inset-bottom), 4px)',
       boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
+      alignItems: 'stretch',
     }}>
       {NAV_ITEMS.map(item => {
         const isActive = location.pathname === item.path;
@@ -89,6 +92,36 @@ function BottomNavbar() {
           </button>
         );
       })}
+
+      {/* Settings gear button — right edge of nav */}
+      <button
+        onClick={() => navigate('/settings')}
+        style={{
+          width: 50, padding: '10px 0 8px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+          backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+          borderLeft: '1px solid rgba(255,255,255,0.04)',
+        }}
+      >
+        <motion.div
+          whileTap={{ rotate: 45 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          style={{
+            width: 44, height: 34,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderRadius: 12,
+          }}
+        >
+          <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>⚙️</span>
+        </motion.div>
+        <span style={{
+          fontSize: '0.62rem', fontWeight: 800,
+          color: '#334155',
+          textTransform: 'uppercase', letterSpacing: 0.8,
+        }}>
+          Config
+        </span>
+      </button>
     </div>
   );
 }
@@ -99,11 +132,17 @@ function AppContent() {
   const showNav = NAV_PAGES.includes(location.pathname);
   const { refreshSession } = useAuthStore();
   const hasOnboarded = useAppStore(s => s.hasOnboarded);
+  const theme = useAppStore(s => s.theme);
 
   // Try to restore session from refresh token cookie on first load
   useEffect(() => {
     refreshSession().catch(() => {/* no-op — guest play is fine */});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync theme to document for any global CSS that may need it
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   return (
     <div style={{
@@ -129,6 +168,8 @@ function AppContent() {
           <Route path="/study"      element={<StudySwipeMode />} />
           <Route path="/items"      element={<ItemsPage />} />
           <Route path="/law"        element={<LawViva />} />
+          <Route path="/settings"   element={<SettingsPage />} />
+          <Route path="/hero"       element={<CosmeticsPage />} />
         </Routes>
       </AnimatePresence>
       <BottomNavbar />

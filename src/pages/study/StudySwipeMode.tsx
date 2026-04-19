@@ -343,6 +343,7 @@ export default function StudySwipeMode() {
     chooseRunUpgrade, skipRunUpgrade, pickItem, dismissItemDrop,
     runItems, selectedConcurso: storeConcurso,
     runId, currentQuestions,
+    setPendingCosmeticChest,
   } = useAppStore();
 
   const [qIndex, setQIndex]           = useState(0);
@@ -816,7 +817,14 @@ export default function StudySwipeMode() {
 
               <motion.button
                 whileTap={{ scale: 0.97 }}
-                onClick={() => { respawn(); setSelectedIdx(null); setQIndex(0); setCombatLog(''); navigate('/home'); }}
+                onClick={() => {
+                  setPendingCosmeticChest(true);
+                  respawn();
+                  setSelectedIdx(null);
+                  setQIndex(0);
+                  setCombatLog('');
+                  navigate('/home');
+                }}
                 style={{
                   width: '100%', padding: '18px',
                   background: 'linear-gradient(135deg, #3B82F6, #6D28D9)',

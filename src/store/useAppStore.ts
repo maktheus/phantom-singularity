@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { CosmeticItem, CosmeticSlot } from '../data/cosmeticsDb';
 
 export type BuildType = 'warrior' | 'mage' | 'rogue';
 export type ConcursoType = 'policial' | 'tributario' | 'judiciario' | 'administrativo' | 'ti' | 'mixed';
@@ -172,6 +173,13 @@ interface GameState {
   runId: string | null;
   currentQuestions: any[]; // Questão vinda do back
 
+  // Theming
+  theme: 'dark' | 'light';
+  // Cosmetic inventory (persists between runs)
+  cosmeticInventory: CosmeticItem[];
+  equippedCosmetics: { hat: string|null; weapon: string|null; armor: string|null; amulet: string|null };
+  pendingCosmeticChest: boolean;
+
   // Actions
   setHasOnboarded: () => void;
   startRun: (build: BuildType, concursoId?: string) => Promise<void>;
@@ -193,6 +201,11 @@ interface GameState {
   resetStreak: () => void;
   incrementQuestions: () => void;
   setConcurso: (c: ConcursoType) => void;
+  toggleTheme: () => void;
+  addCosmeticItem: (item: CosmeticItem) => void;
+  equipCosmetic: (itemId: string) => void;
+  unequipCosmetic: (slot: CosmeticSlot) => void;
+  setPendingCosmeticChest: (v: boolean) => void;
 }
 
 // ─── Enemy Roster ─────────────────────────────────────────────────────────────
@@ -317,6 +330,10 @@ export const useAppStore = create<GameState>()(
       pendingItemDrop: false,
       runId: null,
       currentQuestions: [],
+      theme: 'dark' as 'dark' | 'light',
+      cosmeticInventory: [],
+      equippedCosmetics: { hat: null, weapon: null, armor: null, amulet: null },
+      pendingCosmeticChest: false,
 
       setHasOnboarded: () => set({ hasOnboarded: true }),
 
@@ -357,7 +374,25 @@ export const useAppStore = create<GameState>()(
 
         // Fallback local
         const player = applyPermanents(defaultPlayer(build), permanentUpgrades);
-        set({ player, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false, runId: null, currentQuestions: [] });
+
+        // Apply equipped cosmetic bonuses
+        const { cosmeticInventory, equippedCosmetics } = get();
+        const withCosmetics = (() => {
+          let p = { ...player };
+          for (const itemId of Object.values(equippedCosmetics)) {
+            if (!itemId) continue;
+            const item = cosmeticInventory.find(i => i.id === itemId);
+            if (!item) continue;
+            const b = item.statBonus;
+            if (b.damage)         p.damage         += b.damage;
+            if (b.maxHp)         { p.maxHp          += b.maxHp; p.hp += b.maxHp; }
+            if (b.critChance)     p.critChance      = Math.min(0.85, p.critChance + b.critChance);
+            if (b.goldMultiplier) p.goldMultiplier  += b.goldMultiplier;
+          }
+          return p;
+        })();
+
+        set({ player: withCosmetics, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false, runId: null, currentQuestions: [] });
       },
 
       attackEnemy: async (questionId, chosenIndex, ms) => {
@@ -548,15 +583,46 @@ export const useAppStore = create<GameState>()(
       dismissItemDrop: () => set({ pendingItemDrop: false }),
 
       respawn: () => {
-        const { permanentUpgrades, player } = get();
+        const { permanentUpgrades, player, cosmeticInventory, equippedCosmetics } = get();
         const base = defaultPlayer(player.build);
-        set({ player: applyPermanents(base, permanentUpgrades), enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false });
+        const basePlayer = applyPermanents(base, permanentUpgrades);
+        const withCosmetics = (() => {
+          let p = { ...basePlayer };
+          for (const itemId of Object.values(equippedCosmetics)) {
+            if (!itemId) continue;
+            const item = cosmeticInventory.find(i => i.id === itemId);
+            if (!item) continue;
+            const b = item.statBonus;
+            if (b.damage)         p.damage         += b.damage;
+            if (b.maxHp)         { p.maxHp          += b.maxHp; p.hp += b.maxHp; }
+            if (b.critChance)     p.critChance      = Math.min(0.85, p.critChance + b.critChance);
+            if (b.goldMultiplier) p.goldMultiplier  += b.goldMultiplier;
+          }
+          return p;
+        })();
+        set({ player: withCosmetics, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false });
       },
 
       incrementStreak: () => set(s => ({ streak: s.streak + 1 })),
       resetStreak: () => set({ streak: 0 }),
       incrementQuestions: () => set(s => ({ totalQuestionsAnswered: s.totalQuestionsAnswered + 1 })),
       setConcurso: (c) => set({ selectedConcurso: c }),
+
+      toggleTheme: () => set(s => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+
+      addCosmeticItem: (item) => set(s => ({
+        cosmeticInventory: [...s.cosmeticInventory, item],
+      })),
+
+      equipCosmetic: (itemId) => set(s => {
+        const item = s.cosmeticInventory.find(i => i.id === itemId);
+        if (!item) return s;
+        return { equippedCosmetics: { ...s.equippedCosmetics, [item.slot]: itemId } };
+      }),
+
+      unequipCosmetic: (slot) => set(s => ({ equippedCosmetics: { ...s.equippedCosmetics, [slot]: null } })),
+
+      setPendingCosmeticChest: (v) => set({ pendingCosmeticChest: v }),
     }),
     { name: 'phantom-rpg-v3-save' }
   )
