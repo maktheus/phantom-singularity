@@ -479,7 +479,7 @@ export default function StudySwipeMode() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', backgroundColor: '#0A0F1E', display: 'flex', flexDirection: 'column', color: 'white' }}>
+    <div style={{ height: '100dvh', backgroundColor: '#0A0F1E', display: 'flex', flexDirection: 'column', color: 'white', overflow: 'hidden' }}>
 
       {/* Screen flash */}
       <AnimatePresence>{flashColor && <ScreenFlash key={flashColor + Date.now()} color={flashColor} />}</AnimatePresence>
@@ -559,7 +559,7 @@ export default function StudySwipeMode() {
       />
 
       {/* ── Question Section ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 140px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 24px' }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={qIndex}
@@ -727,39 +727,42 @@ export default function StudySwipeMode() {
       </div>
 
       {/* ── Continue Button ── */}
-      {selectedIdx !== null && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && (
-        <motion.div
-          initial={{ y: 100 }} animate={{ y: 0 }}
-          style={{
-            position: 'fixed', bottom: 0,
-            left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: 600,
-            padding: '12px 16px',
-            paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-            backgroundColor: 'rgba(10,15,30,0.97)',
-            backdropFilter: 'blur(12px)',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            zIndex: 50,
-          }}>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={handleContinue}
+      <AnimatePresence>
+        {selectedIdx !== null && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && (
+          <motion.div
+            key="continue-btn"
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
             style={{
-              width: '100%', padding: '18px',
-              borderRadius: 16, fontWeight: 900, fontSize: '1.05rem',
-              background: selectedOpt?.isCorrect
-                ? 'linear-gradient(135deg, #22C55E, #15803D)'
-                : 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
-              color: 'white',
-              boxShadow: `0 5px 0 ${selectedOpt?.isCorrect ? '#14532D' : '#1e3a8a'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              flexShrink: 0,
+              padding: '12px 16px',
+              paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
+              backgroundColor: 'rgba(10,15,30,0.98)',
+              backdropFilter: 'blur(12px)',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
             }}>
-            {enemy.hp <= 0 && selectedOpt?.isCorrect
-              ? `🎁 Escolher Power-Up! (Lv.${enemy.level + 1})`
-              : selectedOpt?.isCorrect ? '✓ Próxima questão →' : '→ Continuar'}
-          </motion.button>
-        </motion.div>
-      )}
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={handleContinue}
+              style={{
+                width: '100%', padding: '18px',
+                borderRadius: 16, fontWeight: 900, fontSize: '1.05rem',
+                background: selectedOpt?.isCorrect
+                  ? 'linear-gradient(135deg, #22C55E, #15803D)'
+                  : 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
+                color: 'white',
+                boxShadow: `0 5px 0 ${selectedOpt?.isCorrect ? '#14532D' : '#1e3a8a'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}>
+              {enemy.hp <= 0 && selectedOpt?.isCorrect
+                ? `🎁 Escolher Power-Up! (Lv.${enemy.level + 1})`
+                : selectedOpt?.isCorrect ? '✓ Próxima questão →' : '→ Continuar'}
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Game Over Screen ── */}
       <AnimatePresence>
