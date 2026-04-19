@@ -12,6 +12,12 @@ export interface GeneratedQuestion {
   topic: string;
   source: 'real' | 'ai';
   concurso: ConcursoType;
+  /** Optional URL or data-URI for an image displayed above the question */
+  imageUrl?: string;
+  /** Optional literary / normative passage that the question refers to */
+  passage?: string;
+  /** Optional title shown above the passage (e.g. "Texto — Machado de Assis") */
+  passageTitle?: string;
 }
 
 // ── Real Question Bank ────────────────────────────────────────────────────────
@@ -178,6 +184,54 @@ const REAL_QUESTIONS: GeneratedQuestion[] = [
       { text: "Garantir tolerância contra qualquer injunção de chaves estrangeiras com constraint check robustos vindos da máquina engine.", isCorrect: false, tip: "Mongo não tem Constraint Checks de chaves estrangeiras automáticos no sentido relacional." },
       { text: "Aderência total a todas as vertentes C, A e P de CAP simultaneamente sob qualquer premissa de falha.", isCorrect: false, tip: "É impossível aderir às 3 simultaneamente segundo o teorema CAP. Escolhe-se 2 num dado cenário de partição/falha." }
     ]
+  },
+
+  // ── INTERPRETAÇÃO DE TEXTO (com passage) ──────────────────────────────────
+  {
+    concurso: 'mixed', topic: 'Língua Portuguesa', source: 'real',
+    passageTitle: 'Texto — Machado de Assis, "Dom Casmurro" (1899)',
+    passage:
+      'Era a mesma Capitu de Matacavalos, mas o tempo e outros agentes fizeram nela o que fazem no resto do mundo. Não lhe murcharam a beleza; parecia antes que a aperfeiçoaram, dando-lhe mais firmeza e consistência. Os olhos eram os mesmos olhos de ressaca, que tinham a virtude de meter o mundo dentro deles, e tirá-lo feito luz ou sombra, conforme a precisão da hora.',
+    text: 'Com base no excerto de Machado de Assis, a expressão "olhos de ressaca" é um recurso de linguagem que se classifica como:',
+    options: [
+      { text: 'Metáfora, pois estabelece uma comparação implícita entre os olhos da personagem e o movimento das ondas do mar.', isCorrect: true, tip: 'Correto. A "ressaca" é usada metaforicamente: os olhos são profundos, mutáveis e envolventes como as ondas de retorno do mar, sem uso do "como" ou "tal qual" da comparação explícita.' },
+      { text: 'Hipérbole, pois exagera de forma intencional a beleza dos olhos para criar efeito cômico.', isCorrect: false, tip: 'Hipérbole é um exagero consciente, geralmente com tom humorístico. Aqui não há exagero com fins cômicos, mas uma figura de substituição de sentido.' },
+      { text: 'Metonímia, pois substitui o nome do mar pelo efeito que ele provoca sobre os olhos.', isCorrect: false, tip: 'Metonímia substitui termos com base em contiguidade real (parte/todo, causa/efeito). Aqui a "ressaca" não é contígua aos olhos; é uma imagem transposta por semelhança — o que caracteriza metáfora.' },
+      { text: 'Onomatopeia, pois o som da palavra "ressaca" remete ao barulho das ondas do mar.', isCorrect: false, tip: 'Onomatopeia imita sonicamente um fenômeno (ex.: "farfalhar", "miau"). A expressão não depende do som da palavra para criar sentido.' },
+      { text: 'Paradoxo, pois apresenta duas ideias contraditórias sobre a beleza da personagem.', isCorrect: false, tip: 'Não há ideias contraditórias justapostas no trecho destacado. O paradoxo exige contradição lógica expressa (ex.: "luz escura").' },
+    ],
+  },
+  {
+    concurso: 'administrativo', topic: 'Legislação — Lei 8.112/90', source: 'real',
+    passageTitle: 'Lei nº 8.112/1990 — Regime Jurídico dos Servidores Públicos Civis da União (excerto)',
+    passage:
+      'Art. 117. Ao servidor é proibido:\n' +
+      'I – ausentar-se do serviço durante o expediente, sem prévia autorização do chefe imediato;\n' +
+      'IX – valer-se do cargo para lograr proveito pessoal ou de outrem, em detrimento da dignidade da função pública;\n' +
+      'X – participar de gerência ou administração de sociedade privada, personificada ou não personificada, salvo a participação nos conselhos de administração e fiscal de empresas ou entidades em que a União detenha, direta ou indiretamente, participação no capital social ou em sociedade cooperativa constituída para prestar serviços a seus membros;\n' +
+      'XII – receber propina, comissão, presente ou vantagem de qualquer espécie, em razão de suas atribuições.',
+    text: 'Com base no excerto da Lei 8.112/90, considere a situação: o servidor João aceita de uma empresa privada um jantar avaliado em R$ 200,00 para tratar de assuntos de seu setor. Tal conduta viola:',
+    options: [
+      { text: 'O inciso XII do Art. 117, pois configura recebimento de vantagem de qualquer espécie em razão de suas atribuições.', isCorrect: true, tip: 'Correto. Independentemente do valor, receber qualquer benefício (inclusive jantares) em razão das atribuições é conduta vedada.' },
+      { text: 'Apenas o inciso I, pois ausentou-se do expediente sem autorização para participar do jantar.', isCorrect: false, tip: 'Não há informação sobre ausência do expediente. A infração é o recebimento de vantagem, não necessariamente a ausência.' },
+      { text: 'O inciso X, pois participou da gerência de uma sociedade privada ao negociar interesses dela.', isCorrect: false, tip: 'Negociar em um jantar não é "participar da gerência ou administração" de sociedade privada. O inciso X trata de vínculo societário formal.' },
+      { text: 'Nenhum inciso, pois um jantar de trabalho de R$ 200,00 é considerado custo operacional normal.', isCorrect: false, tip: 'A Lei 8.112/90 não prevê valor mínimo para a vedação. Qualquer vantagem, independentemente do valor, é proibida.' },
+      { text: 'O inciso IX, pois logrou proveito pessoal imaterial em detrimento da dignidade do cargo.', isCorrect: false, tip: 'Embora o IX possa ser invocado secundariamente, o tipo específico da conduta (receber vantagem material) é melhor tipificado no XII.' },
+    ],
+  },
+  {
+    concurso: 'policial', topic: 'Língua Portuguesa — Redação Oficial', source: 'real',
+    passageTitle: 'Manual de Redação da Presidência da República — 3ª Edição (excerto)',
+    passage:
+      'O padrão culto é aquele em que: (i) se observam as regras da gramática formal; e (ii) se emprega um vocabulário comum ao conjunto dos usuários do idioma. É importante ressaltar que o padrão culto nada tem de rebuscado ou difícil. A língua culta é aquela que permite a comunicação precisa e eficiente. Impessoalidade, clareza, concisão, formalidade e uniformidade são os atributos fundamentais do texto oficial.\n\nA clareza deve ser o atributo fundamental de todo texto oficial. Pode-se definir como claro aquele texto que possibilita imediata compreensão pelo leitor. O texto oficial deve ser, antes de tudo, útil ao destinatário.',
+    text: 'Com base no excerto do Manual de Redação da Presidência da República, assinale a alternativa que apresenta característica NÃO atribuída ao texto oficial:',
+    options: [
+      { text: 'Subjetividade na expressão das ideias, permitindo ao redator revelar sua opinião pessoal.', isCorrect: true, tip: 'Correto. O Manual enfatiza impessoalidade — o texto deve ser isento de opinião pessoal. Subjetividade é característica oposta ao padrão oficial.' },
+      { text: 'Clareza que possibilite imediata compreensão pelo leitor.', isCorrect: false, tip: 'Clareza é explicitamente citada como "atributo fundamental de todo texto oficial" no excerto.' },
+      { text: 'Concisão como um dos atributos fundamentais da redação.', isCorrect: false, tip: 'Concisão está listada diretamente como um dos cinco atributos fundamentais no excerto.' },
+      { text: 'Uniformidade de linguagem entre os documentos produzidos.', isCorrect: false, tip: 'Uniformidade é listada como um dos atributos fundamentais do texto oficial no excerto.' },
+      { text: 'Uso do padrão culto da língua com vocabulário comum ao conjunto dos usuários.', isCorrect: false, tip: 'O uso do padrão culto está na primeira frase do excerto como requisito básico.' },
+    ],
   },
 ];
 

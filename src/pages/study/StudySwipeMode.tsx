@@ -592,12 +592,71 @@ export default function StudySwipeMode() {
               )}
             </div>
 
-            {/* Question text */}
+            {/* ── Optional image ── */}
+            {currentQ.imageUrl && (
+              <div style={{ marginBottom: 12, borderRadius: 14, overflow: 'hidden', border: '1px solid #1E293B' }}>
+                <img
+                  src={currentQ.imageUrl}
+                  alt="Imagem da questão"
+                  style={{ width: '100%', display: 'block', maxHeight: 220, objectFit: 'contain', backgroundColor: '#0F172A' }}
+                />
+              </div>
+            )}
+
+            {/* ── Optional literary / normative passage ── */}
+            {currentQ.passage && (
+              <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid #334155', overflow: 'hidden' }}>
+                {/* Passage header bar */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 14px',
+                  background: 'linear-gradient(90deg, #1E293B 0%, #0F172A 100%)',
+                  borderBottom: '1px solid #1E293B',
+                }}>
+                  <BookOpen size={13} color="#94A3B8" />
+                  <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#94A3B8', letterSpacing: 0.4 }}>
+                    {currentQ.passageTitle ?? 'Leia o texto a seguir:'}
+                  </span>
+                </div>
+                {/* Scrollable passage body */}
+                <div style={{
+                  maxHeight: 200, overflowY: 'auto',
+                  padding: '12px 14px',
+                  backgroundColor: '#0A0F1E',
+                  fontSize: '0.87rem', lineHeight: 1.75, color: '#CBD5E1',
+                  fontStyle: 'italic', fontWeight: 500,
+                  whiteSpace: 'pre-line',
+                  /* Custom scrollbar */
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#334155 transparent',
+                }}>
+                  {currentQ.passage}
+                </div>
+                {/* "Scroll to read" hint when passage is long */}
+                {currentQ.passage.length > 300 && (
+                  <div style={{
+                    textAlign: 'center', padding: '4px 0',
+                    fontSize: '0.6rem', fontWeight: 800, color: '#334155',
+                    background: '#0A0F1E', borderTop: '1px solid #1E293B',
+                    letterSpacing: 0.5,
+                  }}>
+                    ↑ role para ler todo o texto ↑
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Question text ── */}
             <div style={{
-              fontSize: '1rem', fontWeight: 700, lineHeight: 1.6, color: '#E2E8F0',
+              fontSize: '0.97rem', fontWeight: 700, lineHeight: 1.65, color: '#E2E8F0',
               marginBottom: 16, padding: '14px 16px',
               backgroundColor: '#0F172A', borderRadius: 14, border: '1px solid #1E293B',
             }}>
+              {currentQ.passage && (
+                <span style={{ display: 'block', fontSize: '0.63rem', fontWeight: 900, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
+                  Com base no texto acima:
+                </span>
+              )}
               {currentQ.text}
             </div>
 
