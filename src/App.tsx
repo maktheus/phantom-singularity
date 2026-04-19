@@ -32,10 +32,12 @@ function BottomNavbar() {
     <div style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 600,
-      backgroundColor: '#0F172A',
-      borderTop: '2px solid #1E293B',
+      background: 'rgba(10,15,30,0.95)',
+      backdropFilter: 'blur(16px)',
+      borderTop: '1px solid rgba(255,255,255,0.06)',
       display: 'flex', zIndex: 1000,
       paddingBottom: 'max(env(safe-area-inset-bottom), 4px)',
+      boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
     }}>
       {NAV_ITEMS.map(item => {
         const isActive = location.pathname === item.path;
@@ -44,24 +46,43 @@ function BottomNavbar() {
             key={item.path}
             onClick={() => navigate(item.path)}
             style={{
-              flex: 1, padding: '12px 0 10px',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+              flex: 1, padding: '10px 0 8px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
-              borderTop: `2px solid ${isActive ? '#EF4444' : 'transparent'}`,
-              transition: 'border-color 0.2s',
+              position: 'relative',
             }}
           >
-            <motion.span
-              animate={isActive ? { scale: [1, 1.25, 1] } : { scale: 1 }}
-              transition={{ duration: 0.3 }}
-              style={{ fontSize: '1.5rem', lineHeight: 1 }}
+            {/* Active pill indicator */}
+            {isActive && (
+              <motion.div
+                layoutId="nav-indicator"
+                style={{
+                  position: 'absolute',
+                  top: 0, left: '20%', right: '20%', height: 2,
+                  borderRadius: '0 0 4px 4px',
+                  background: 'linear-gradient(90deg, #EF4444, #F97316)',
+                }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              />
+            )}
+            <motion.div
+              animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              style={{
+                width: 44, height: 34,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: isActive ? 'rgba(239,68,68,0.12)' : 'transparent',
+                transition: 'background-color 0.2s',
+              }}
             >
-              {item.icon}
-            </motion.span>
+              <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{item.icon}</span>
+            </motion.div>
             <span style={{
-              fontSize: '0.65rem', fontWeight: 800,
-              color: isActive ? '#EF4444' : '#475569',
-              textTransform: 'uppercase', letterSpacing: 0.5
+              fontSize: '0.62rem', fontWeight: 800,
+              color: isActive ? '#EF4444' : '#334155',
+              textTransform: 'uppercase', letterSpacing: 0.8,
+              transition: 'color 0.2s',
             }}>
               {item.label}
             </span>
