@@ -264,6 +264,9 @@ interface GameState {
   ownedBlueprints: string[];
   buyBlueprint: (id: string) => boolean;
 
+  // Stack cost tracking per run
+  runPowerUpCounts: Record<string, number>;
+
   // Tutorial
   isTutorial: boolean;
   tutorialStep: number;   // 0 = first Q, 1 = after answer, 2 = after kill, 3 = after upgrade → done
@@ -426,6 +429,13 @@ function checkEvolution(items: RunItem[]): { weaponId: string; evolution: string
   return null;
 }
 
+// ─── Stack cost helper ────────────────────────────────────────────────────────
+const STACK_BASE: Record<ItemRarity, number> = { common: 20, rare: 50, legendary: 120 };
+export function powerUpStackCost(rarity: ItemRarity, stackCount: number): number {
+  if (stackCount === 0) return 0;
+  return Math.floor(STACK_BASE[rarity] * Math.pow(5, stackCount));
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 export const useAppStore = create<GameState>()(
   persist(
@@ -460,6 +470,7 @@ export const useAppStore = create<GameState>()(
       tutorialStep: 0,
       unlockedBuilds: ['warrior'] as BuildType[],
       ownedBlueprints: ['r1', 'r2', 'r3'] as string[],
+      runPowerUpCounts: {} as Record<string, number>,
 
       setHasOnboarded: () => set({ hasOnboarded: true }),
       resetOnboarding: () => set({ hasOnboarded: false }),
@@ -493,6 +504,7 @@ export const useAppStore = create<GameState>()(
               runItems: [],
               pendingItemDrop: false,
               lastEvolvedItem: null,
+              runPowerUpCounts: {},
             });
             return;
           } catch (e) {
@@ -520,7 +532,7 @@ export const useAppStore = create<GameState>()(
           return p;
         })();
 
-        set({ player: withCosmetics, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false, lastEvolvedItem: null, runId: null, currentQuestions: [] });
+        set({ player: withCosmetics, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false, lastEvolvedItem: null, runId: null, currentQuestions: [], runPowerUpCounts: {} });
       },
 
       attackEnemy: async (questionId, chosenIndex, ms) => {
@@ -729,8 +741,16 @@ export const useAppStore = create<GameState>()(
       },
 
       chooseRunUpgrade: (up) => {
-        const { player } = get();
-        set({ player: up.apply(player), pendingRunUpgrades: null });
+        const { player, gold, runPowerUpCounts } = get();
+        const count = runPowerUpCounts[up.id] ?? 0;
+        const cost = powerUpStackCost(up.rarity, count);
+        if (cost > 0 && gold < cost) return; // can't afford
+        set({
+          player: up.apply(player),
+          pendingRunUpgrades: null,
+          gold: gold - cost,
+          runPowerUpCounts: { ...runPowerUpCounts, [up.id]: count + 1 },
+        });
       },
       skipRunUpgrade: () => set({ pendingRunUpgrades: null }),
 

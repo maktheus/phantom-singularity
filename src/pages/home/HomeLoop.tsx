@@ -194,32 +194,152 @@ function TodayCard({ todayStats, streak, build }: {
   build: BuildType;
 }) {
   const [shared, setShared] = useState(false);
-  const buildInfo = BUILD_INFO[build] ?? BUILD_INFO.warrior;
 
   const accuracy = todayStats.questions > 0
     ? Math.min(100, Math.round((todayStats.kills / Math.max(1, todayStats.kills + todayStats.questions * 0.3)) * 100))
     : 0;
 
   const handleShare = async () => {
-    const text = [
-      `⚔️ Concurseiro RPG — ${buildInfo.name}`,
-      `🔥 ${streak} dia${streak !== 1 ? 's' : ''} seguido${streak !== 1 ? 's' : ''}!`,
-      `📚 ${todayStats.questions} questões hoje`,
-      `💀 ${todayStats.kills} inimigos derrotados`,
-      `🪙 ${todayStats.goldEarned} ouro acumulado`,
-      ``,
-      `Estude como RPG 👉 maktheus.github.io/phantom-singularity`,
-    ].join('\n');
-
     try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Meu progresso hoje — Concurseiro RPG', text });
-      } else {
-        await navigator.clipboard.writeText(text);
-      }
-      setShared(true);
-      setTimeout(() => setShared(false), 2500);
-    } catch {/* cancelled */}
+      // Generate canvas image
+      const canvas = document.createElement('canvas');
+      const DPR = Math.min(window.devicePixelRatio || 2, 3);
+      const W = 400, H = 580;
+      canvas.width = W * DPR;
+      canvas.height = H * DPR;
+      const ctx = canvas.getContext('2d')!;
+      ctx.scale(DPR, DPR);
+
+      // ── Background ──
+      const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+      bgGrad.addColorStop(0, '#060B16');
+      bgGrad.addColorStop(0.5, '#0D1526');
+      bgGrad.addColorStop(1, '#0A0F1E');
+      ctx.fillStyle = bgGrad;
+      ctx.roundRect(0, 0, W, H, 24);
+      ctx.fill();
+
+      // ── Top accent glow ──
+      const glowGrad = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, 200);
+      glowGrad.addColorStop(0, 'rgba(99,102,241,0.25)');
+      glowGrad.addColorStop(1, 'rgba(99,102,241,0)');
+      ctx.fillStyle = glowGrad;
+      ctx.fillRect(0, 0, W, H/2);
+
+      // ── Border ──
+      ctx.strokeStyle = 'rgba(99,102,241,0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.roundRect(1, 1, W-2, H-2, 23);
+      ctx.stroke();
+
+      // ── Logo / Icon ──
+      ctx.font = '52px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚔️', W/2, 80);
+
+      // ── Title ──
+      ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#E2E8F0';
+      ctx.fillText('Concurseiro RPG', W/2, 115);
+
+      // ── Subtitle ──
+      ctx.font = '700 12px system-ui, sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText('RESULTADO DO DIA', W/2, 138);
+
+      // ── Divider ──
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(32, 155); ctx.lineTo(W-32, 155); ctx.stroke();
+
+      // ── Class badge ──
+      const buildEmoji = build === 'warrior' ? '🛡️' : build === 'mage' ? '🔮' : '🗡️';
+      const buildName2  = build === 'warrior' ? 'Guerreiro' : build === 'mage' ? 'Mago' : 'Ladino';
+      const buildColor2 = build === 'warrior' ? '#EF4444' : build === 'mage' ? '#A855F7' : '#22C55E';
+
+      // pill background
+      ctx.fillStyle = buildColor2 + '22';
+      const pillW = 140, pillH = 32, pillX = W/2 - pillW/2, pillY = 164;
+      ctx.roundRect(pillX, pillY, pillW, pillH, 999);
+      ctx.fill();
+      ctx.strokeStyle = buildColor2 + '60';
+      ctx.lineWidth = 1;
+      ctx.roundRect(pillX, pillY, pillW, pillH, 999);
+      ctx.stroke();
+      ctx.font = '700 13px system-ui, sans-serif';
+      ctx.fillStyle = buildColor2;
+      ctx.fillText(`${buildEmoji} ${buildName2}`, W/2, 185);
+
+      // ── Stats 2x2 grid ──
+      const stats = [
+        { icon: '📚', value: String(todayStats.questions), label: 'Questões', color: '#60A5FA' },
+        { icon: '💀', value: String(todayStats.kills),     label: 'Derrotados', color: '#F87171' },
+        { icon: '🔥', value: String(streak),               label: 'Dias Streak', color: '#FB923C' },
+        { icon: '🪙', value: String(todayStats.goldEarned),label: 'Ouro', color: '#FBBF24' },
+      ];
+      const gridTop = 212, cellW = 176, cellH = 120;
+      stats.forEach((s, i) => {
+        const col = i % 2, row = Math.floor(i / 2);
+        const cx = 12 + col * cellW, cy = gridTop + row * cellH;
+        // cell bg
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.roundRect(cx, cy, cellW - 8, cellH - 8, 14);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 1;
+        ctx.roundRect(cx, cy, cellW - 8, cellH - 8, 14);
+        ctx.stroke();
+        // icon
+        ctx.font = '28px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(s.icon, cx + (cellW-8)/2, cy + 38);
+        // value
+        ctx.font = 'bold 28px system-ui, sans-serif';
+        ctx.fillStyle = s.color;
+        ctx.fillText(s.value || '0', cx + (cellW-8)/2, cy + 72);
+        // label
+        ctx.font = '600 11px system-ui, sans-serif';
+        ctx.fillStyle = '#475569';
+        ctx.fillText(s.label, cx + (cellW-8)/2, cy + 92);
+      });
+
+      // ── Footer ──
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(32, H-80); ctx.lineTo(W-32, H-80); ctx.stroke();
+
+      ctx.font = '600 11px system-ui, sans-serif';
+      ctx.fillStyle = '#334155';
+      ctx.textAlign = 'center';
+      ctx.fillText('maktheus.github.io/phantom-singularity', W/2, H-52);
+
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.fillStyle = '#6366F1';
+      ctx.fillText('Estude como RPG ⚔️', W/2, H-28);
+
+      // ── Convert to blob and share ──
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], 'concurseiro-rpg.png', { type: 'image/png' });
+        try {
+          if (navigator.share && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: 'Concurseiro RPG',
+              text: `${buildEmoji} ${buildName2} — ${todayStats.kills} inimigos derrotados hoje!`,
+              files: [file],
+            });
+          } else {
+            // Fallback: download the image
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'concurseiro-rpg.png'; a.click();
+            URL.revokeObjectURL(url);
+          }
+          setShared(true);
+          setTimeout(() => setShared(false), 2500);
+        } catch {/* cancelled */}
+      }, 'image/png');
+    } catch { /* silent */ }
   };
 
   return (

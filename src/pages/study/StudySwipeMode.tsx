@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Zap, BookOpen, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, powerUpStackCost } from '../../store/useAppStore';
 import type { RunPowerUp, RunItem, BuildType } from '../../store/useAppStore';
 import { getRealQuestions, shuffleQuestions, REAL_QUESTIONS } from '../../services/questionEngine';
 import '../../pixelart.css';
@@ -261,11 +261,13 @@ const RARITY_COLORS = { common: '#60A5FA', rare: '#A78BFA', legendary: '#FBBF24'
 const RARITY_BG     = { common: '#0F2040', rare: '#1E1040', legendary: '#2D1500' };
 const RARITY_LABEL  = { common: 'Comum', rare: 'Raro', legendary: '⭐ LENDÁRIO' };
 
-function PowerUpModal({ upgrades, playerBuild, onChoose, onSkip }: {
+function PowerUpModal({ upgrades, playerBuild, onChoose, onSkip, gold, runPowerUpCounts }: {
   upgrades: RunPowerUp[];
   playerBuild: BuildType;
   onChoose: (u: RunPowerUp) => void;
   onSkip: () => void;
+  gold: number;
+  runPowerUpCounts: Record<string, number>;
 }) {
   const isLucky = upgrades.length >= 4; // 4 choices = lucky roll
 
@@ -313,8 +315,12 @@ function PowerUpModal({ upgrades, playerBuild, onChoose, onSkip }: {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
           {upgrades.map(u => {
             const isClassExclusive = !!u.forClass;
+            const count = runPowerUpCounts[u.id] ?? 0;
+            const cost = powerUpStackCost(u.rarity, count);
+            const canAfford = cost === 0 || gold >= cost;
             return (
-              <motion.button key={u.id} whileTap={{ scale: 0.97 }} onClick={() => onChoose(u)}
+              <motion.button key={u.id} whileTap={canAfford ? { scale: 0.97 } : {}} onClick={() => canAfford && onChoose(u)}
+                disabled={!canAfford}
                 style={{
                   padding: '13px 16px', borderRadius: 14,
                   background: isClassExclusive
@@ -326,6 +332,8 @@ function PowerUpModal({ upgrades, playerBuild, onChoose, onSkip }: {
                     ? `0 4px 20px ${buildColor}20`
                     : `0 4px 20px ${RARITY_COLORS[u.rarity]}15`,
                   position: 'relative', overflow: 'hidden',
+                  opacity: canAfford ? 1 : 0.4,
+                  cursor: canAfford ? 'pointer' : 'default',
                 }}>
                 {/* Class-exclusive shimmer */}
                 {isClassExclusive && (
@@ -336,6 +344,11 @@ function PowerUpModal({ upgrades, playerBuild, onChoose, onSkip }: {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2, flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 900, fontSize: '0.9rem' }}>{u.name}</span>
+                    {count > 0 && (
+                      <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#94A3B8', backgroundColor: 'rgba(148,163,184,0.15)', padding: '2px 6px', borderRadius: 999, border: '1px solid rgba(148,163,184,0.3)' }}>
+                        ×{count + 1}
+                      </span>
+                    )}
                     {isClassExclusive && (
                       <span style={{ fontSize: '0.55rem', fontWeight: 900, color: buildColor, backgroundColor: `${buildColor}22`, padding: '2px 6px', borderRadius: 999, border: `1px solid ${buildColor}40` }}>
                         {buildName.toUpperCase()}
@@ -346,6 +359,16 @@ function PowerUpModal({ upgrades, playerBuild, onChoose, onSkip }: {
                     </span>
                   </div>
                   <div style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600 }}>{u.desc}</div>
+                </div>
+                {/* Cost badge */}
+                <div style={{ flexShrink: 0, textAlign: 'center' }}>
+                  {cost === 0 ? (
+                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#22C55E', backgroundColor: 'rgba(34,197,94,0.15)', padding: '3px 8px', borderRadius: 999 }}>GRÁTIS</span>
+                  ) : (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 900, color: canAfford ? '#FBBF24' : '#F87171', backgroundColor: canAfford ? 'rgba(251,191,36,0.15)' : 'rgba(248,113,113,0.15)', padding: '3px 8px', borderRadius: 999 }}>
+                      🪙 {cost}
+                    </span>
+                  )}
                 </div>
               </motion.button>
             );
@@ -969,6 +992,7 @@ export default function StudySwipeMode() {
     setPendingCosmeticChest,
     lastEvolvedItem, confirmEvolution,
     isTutorial, tutorialStep, advanceTutorial,
+    runPowerUpCounts,
   } = useAppStore();
 
   const [qIndex, setQIndex]           = useState(0);
@@ -1174,7 +1198,7 @@ export default function StudySwipeMode() {
       <AnimatePresence>{flashColor && <ScreenFlash key={flashColor + Date.now()} color={flashColor} />}</AnimatePresence>
 
       {/* Modals */}
-      <AnimatePresence>{pendingRunUpgrades && !pendingItemDrop && <PowerUpModal upgrades={pendingRunUpgrades} playerBuild={player.build} onChoose={(up) => { chooseRunUpgrade(up); if (isTutorial && tutorialStep >= 2) { setTimeout(() => advanceTutorial(), 400); } }} onSkip={skipRunUpgrade} />}</AnimatePresence>
+      <AnimatePresence>{pendingRunUpgrades && !pendingItemDrop && <PowerUpModal upgrades={pendingRunUpgrades} playerBuild={player.build} onChoose={(up) => { chooseRunUpgrade(up); if (isTutorial && tutorialStep >= 2) { setTimeout(() => advanceTutorial(), 400); } }} onSkip={skipRunUpgrade} gold={gold} runPowerUpCounts={runPowerUpCounts} />}</AnimatePresence>
       <AnimatePresence>{pendingItemDrop && !lastEvolvedItem && <ItemChestModal onPick={pickItem} onSkip={dismissItemDrop} ownedIds={runItems.map(x => x.id)} runItems={runItems} />}</AnimatePresence>
       <AnimatePresence>{lastEvolvedItem && <EvolutionRevealModal key={lastEvolvedItem} itemId={lastEvolvedItem} onConfirm={confirmEvolution} />}</AnimatePresence>
 
