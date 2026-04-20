@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore, ITEM_POOL, EVOLUTION_TABLE } from '../../store/useAppStore';
 import type { ConcursoType, RunItem } from '../../store/useAppStore';
 import { RARITY_CONFIG, SLOT_CONFIG } from '../../data/cosmeticsDb';
-import type { CosmeticSlot } from '../../data/cosmeticsDb';
+import type { CosmeticSlot, CosmeticItem } from '../../data/cosmeticsDb';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const CONCURSO_OPTIONS: {
@@ -40,7 +40,7 @@ function SectionTitle({ label }: { label: string }) {
 function EquipSlot({ slot, equippedId, inventory, onTap }: {
   slot: CosmeticSlot;
   equippedId: string | null;
-  inventory: ReturnType<typeof useAppStore>['cosmeticInventory'];
+  inventory: CosmeticItem[];
   onTap: () => void;
 }) {
   const item = equippedId ? inventory.find(i => i.id === equippedId) : null;
