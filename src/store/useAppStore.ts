@@ -117,7 +117,11 @@ export interface PlayerStats {
   critChance: number;
   goldMultiplier: number;
   build: BuildType;
-  healOnHit?: number;   // HP healed on every correct answer (vampirism etc.)
+  healOnHit?: number;      // HP healed on every correct answer (vampirism etc.)
+  shieldedHits?: number;   // next N wrong answers blocked (no damage)
+  eliminateOptions?: number; // N wrong options removed from view
+  streakDmgBonus?: number; // +X% damage per consecutive correct answer
+  firstHitBonus?: boolean; // first hit on each enemy deals ×2 damage
 }
 
 export interface EnemyState {
@@ -176,6 +180,11 @@ export const SHOP_BLUEPRINTS: ShopBlueprint[] = [
   { id: 'cm2', cost: 200, discoverAt: 5  },
   { id: 'cr1', cost: 90,  discoverAt: 0  },
   { id: 'cr2', cost: 200, discoverAt: 5  },
+  // ── VS Mechanical blueprints ──
+  { id: 'mec1', cost: 80,  discoverAt: 4  },
+  { id: 'mec2', cost: 100, discoverAt: 6  },
+  { id: 'mec3', cost: 120, discoverAt: 8  },
+  { id: 'mec4', cost: 200, discoverAt: 15 },
 ];
 
 // ─── Game State ───────────────────────────────────────────────────────────────
@@ -224,7 +233,7 @@ interface GameState {
   startRun: (build: BuildType, concursoId?: string) => Promise<void>;
   attackEnemy: (questionId: string, chosenIndex: number, ms: number) => Promise<{ result: 'alive' | 'dead'; isCrit: boolean; actualDmg: number; correct: boolean; tip: string }>;
   /** Full offline combat: updates enemy HP + player HP locally, returns combat result */
-  localAttack: (isCorrect: boolean, optionTip?: string) => { result: 'alive' | 'dead'; isCrit: boolean; actualDmg: number; correct: boolean };
+  localAttack: (isCorrect: boolean, isFirstHit?: boolean) => { result: 'alive' | 'dead'; isCrit: boolean; actualDmg: number; correct: boolean; wasShielded?: boolean };
   endRun: (reason: 'death' | 'victory' | 'abandoned') => Promise<void>;
   takeDamage: (dmg: number) => void;
   spawnNextEnemy: () => void;
@@ -342,6 +351,11 @@ export const RUN_POWERUPS: RunPowerUp[] = [
   { id: 'r10', rarity: 'legendary', emoji: '🧛', name: 'VAMPIRISMO',        desc: 'Cada acerto cura 15 HP',          apply: p => ({ ...p, healOnHit: (p.healOnHit ?? 0) + 15 }) },
   { id: 'r11', rarity: 'rare',      emoji: '💀', name: 'Pacto Sombrio',     desc: '-30 HP Máx · +55 Dano',          apply: p => ({ ...p, damage: p.damage + 55, maxHp: Math.max(20, p.maxHp - 30), hp: Math.min(p.hp, Math.max(20, p.maxHp - 30)) }) },
   { id: 'r12', rarity: 'common',    emoji: '🧪', name: 'Elixir de Força',   desc: '+14 Dano · +14 HP Máx',          apply: p => ({ ...p, damage: p.damage + 14, maxHp: p.maxHp + 14, hp: p.hp + 14 }) },
+  // ── VS Mechanical Power-ups (change HOW you play) ──
+  { id: 'mec1', rarity: 'rare',      emoji: '🔰', name: 'Escudo Arcano',      desc: 'Próximos 2 erros NÃO causam dano',      apply: p => ({ ...p, shieldedHits: (p.shieldedHits ?? 0) + 2 }) },
+  { id: 'mec2', rarity: 'rare',      emoji: '⚡', name: 'Golpe Inicial',      desc: '1º acerto em cada inimigo: dano ×2',    apply: p => ({ ...p, firstHitBonus: true }) },
+  { id: 'mec3', rarity: 'rare',      emoji: '🔥', name: 'Frenesi',            desc: '+10% dano por acerto consecutivo',      apply: p => ({ ...p, streakDmgBonus: (p.streakDmgBonus ?? 0) + 0.10 }) },
+  { id: 'mec4', rarity: 'legendary', emoji: '🔍', name: 'INSTINTO ACADÊMICO', desc: '1 alternativa errada eliminada da tela', apply: p => ({ ...p, eliminateOptions: (p.eliminateOptions ?? 0) + 1 }) },
   // ── Warrior exclusives ──
   { id: 'cw1', forClass: 'warrior', rarity: 'rare',      emoji: '🛡️', name: 'Bastião de Ferro',    desc: '+80 HP Máx · sobrevive muito mais',       apply: p => ({ ...p, maxHp: p.maxHp + 80, hp: p.hp + 80 }) },
   { id: 'cw2', forClass: 'warrior', rarity: 'legendary', emoji: '🏔️', name: 'IRA DO GUERREIRO',  desc: '+60 Dano · cura 20 HP por acerto',        apply: p => ({ ...p, damage: p.damage + 60, healOnHit: (p.healOnHit ?? 0) + 20 }) },
@@ -550,13 +564,22 @@ export const useAppStore = create<GameState>()(
         return { result: 'alive', isCrit: false, actualDmg: 0, correct: false, tip: '' };
       },
 
-      localAttack: (isCorrect, _optionTip) => {
-        const { player, enemy } = get();
+      localAttack: (isCorrect, isFirstHit) => {
+        const { player, enemy, streak } = get();
         if (isCorrect) {
           const rolled = Math.random() < player.critChance;
           // Mage fantasy: 3× crits (others: 2.5×) — mage crits are DEVASTATING one-shots
           const critMult = player.build === 'mage' ? 3.0 : 2.5;
-          const baseDmg = Math.max(1, Math.floor(player.damage * (rolled ? critMult : 1)));
+          let baseDmg = Math.max(1, Math.floor(player.damage * (rolled ? critMult : 1)));
+          // Golpe Inicial: first hit on this enemy deals ×2 (applied before crit, after base)
+          if (isFirstHit && player.firstHitBonus && !rolled) {
+            baseDmg = Math.floor(baseDmg * 2);
+          }
+          // Frenesi: streak bonus — each consecutive correct answer adds +streakDmgBonus%
+          if ((player.streakDmgBonus ?? 0) > 0 && streak > 0) {
+            const streakMult = 1 + Math.min(streak, 10) * (player.streakDmgBonus ?? 0);
+            baseDmg = Math.floor(baseDmg * streakMult);
+          }
           // Armored: reduce by armor value
           const effectiveDmg = enemy.modifier === 'armored'
             ? Math.max(1, baseDmg - enemy.armor)
@@ -572,18 +595,29 @@ export const useAppStore = create<GameState>()(
           set({ enemy: { ...enemy, hp: newEnemyHp }, player: { ...player, hp: newPlayerHp } });
           return { result: newEnemyHp === 0 ? 'dead' as const : 'alive' as const, isCrit: rolled, actualDmg: effectiveDmg, correct: true };
         } else {
-          // ── Enemy counter-attack: piecewise curve — gentle early, steep late ──
-          // L1:3 · L2:6 · L3:9 · L4:14 · L5:19 · L6:24 · L7:29 · L8:34 · L10:44
+          // ── Escudo Arcano: absorb hit, no damage ──
+          if ((player.shieldedHits ?? 0) > 0) {
+            const newShields = (player.shieldedHits ?? 0) - 1;
+            // Regen enemy still heals on shielded hits
+            const regenHp = enemy.modifier === 'regen'
+              ? Math.min(enemy.maxHp, enemy.hp + 6)
+              : enemy.hp;
+            set({ player: { ...player, shieldedHits: newShields }, enemy: { ...enemy, hp: regenHp } });
+            return { result: 'alive' as const, isCrit: false, actualDmg: 0, correct: false, wasShielded: true };
+          }
+
+          // ── Enemy counter-attack: rebalanced to actually hurt ──
+          // L1:18 · L2:26 · L3:34 · L4:44 · L5:54 · L6:64 · L7:74 · L8:84 · L10:104
           const rawDmg = enemy.level <= 3
-            ? enemy.level * 3
-            : Math.floor(9 + (enemy.level - 3) * 5);
+            ? 18 + (enemy.level - 1) * 8
+            : Math.floor(34 + (enemy.level - 3) * 10);
 
           // Enraged modifier: 1.5× counter-attack — very punishing
           const enragedMult = enemy.modifier === 'enraged' ? 1.5 : 1;
           // Warrior: 20% damage reduction (tank fantasy — survives mistakes)
           const warriorMult = player.build === 'warrior' ? 0.80 : 1.0;
 
-          const enemyDmg = Math.max(2, Math.floor(rawDmg * enragedMult * warriorMult));
+          const enemyDmg = Math.max(8, Math.floor(rawDmg * enragedMult * warriorMult));
 
           // Regen enemy heals 6 HP on each wrong answer
           const regenHp = enemy.modifier === 'regen'

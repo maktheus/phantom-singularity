@@ -788,84 +788,169 @@ function BuildStrip({ runItems, onPress }: { runItems: RunItem[]; onPress: () =>
 
 // ─── Question Preview Modal ───────────────────────────────────────────────────
 function QuestionPreviewModal({ question, onReveal }: { question: any; onReveal: () => void }) {
+  const topicLabel = question.topic ?? null;
+  const sourceLabel = question.source === 'real' ? 'Questão Real' : question.source === 'ai' ? 'Gerada por IA' : null;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.04 }}
-      transition={{ duration: 0.2 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
       style={{
         position: 'fixed', inset: 0, zIndex: 180,
-        background: 'rgba(0,0,0,0.88)',
+        background: 'rgba(2,6,18,0.92)',
         display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '24px 20px',
-        backdropFilter: 'blur(6px)',
-      }}>
+        justifyContent: 'flex-end',
+        backdropFilter: 'blur(8px)',
+      }}
+      onClick={onReveal} // tap backdrop = reveal
+    >
       <motion.div
-        initial={{ y: 40, scale: 0.93 }}
-        animate={{ y: 0, scale: 1 }}
-        exit={{ y: -20, scale: 0.96 }}
-        transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-        style={{ width: '100%', maxWidth: 500 }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ repeat: Infinity, duration: 1.4 }}
-            style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
-          <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#475569', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-            Leia com atenção
-          </span>
-        </div>
-
-        {/* Optional passage */}
-        {question.passage && (
-          <div style={{
-            marginBottom: 14, borderRadius: 14, overflow: 'hidden',
-            border: '1px solid #334155',
-          }}>
-            <div style={{ padding: '8px 14px', background: '#1E293B', fontSize: '0.65rem', fontWeight: 900, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              {question.passageTitle ?? 'Texto de referência:'}
-            </div>
-            <div style={{
-              maxHeight: 160, overflowY: 'auto', padding: '12px 14px',
-              background: '#0A0F1E', fontSize: '0.85rem', lineHeight: 1.7, color: '#CBD5E1',
-              fontStyle: 'italic', whiteSpace: 'pre-line', scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent',
-            }}>{question.passage}</div>
-          </div>
-        )}
-
-        {/* Question text */}
-        <div style={{
-          background: '#0F172A', borderRadius: 16, padding: '18px 16px',
-          border: '1px solid #1E293B', marginBottom: 24,
-          fontSize: '1rem', fontWeight: 700, lineHeight: 1.65, color: '#E2E8F0',
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'linear-gradient(180deg, #0D1526 0%, #080D1A 100%)',
+          borderRadius: '28px 28px 0 0',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderBottom: 'none',
+          overflow: 'hidden',
+          boxShadow: '0 -12px 60px rgba(0,0,0,0.7)',
         }}>
-          {question.passage && (
-            <span style={{ display: 'block', fontSize: '0.6rem', fontWeight: 900, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
-              Com base no texto acima:
-            </span>
-          )}
-          {question.text}
+
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.12)' }} />
         </div>
 
-        {/* Reveal button */}
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={onReveal}
-          style={{
-            width: '100%', padding: '18px',
-            background: 'linear-gradient(135deg, #EF4444, #B91C1C)',
-            color: 'white', borderRadius: 16,
-            fontWeight: 900, fontSize: '1.05rem',
-            boxShadow: '0 5px 0 #7F1D1D',
-            border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        {/* Scrollable content */}
+        <div style={{ overflowY: 'auto', maxHeight: '80dvh', padding: '16px 20px 0', scrollbarWidth: 'none' }}>
+
+          {/* ── Title row ── */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <motion.div
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ repeat: Infinity, duration: 1.2 }}
+                style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
+              <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#64748B', letterSpacing: 1.4, textTransform: 'uppercase' }}>
+                Leia com atenção
+              </span>
+            </div>
+            {/* Badges row */}
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {topicLabel && (
+                <span style={{
+                  fontSize: '0.58rem', fontWeight: 800, color: '#818CF8',
+                  background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
+                  padding: '3px 8px', borderRadius: 999,
+                }}>
+                  {topicLabel}
+                </span>
+              )}
+              {sourceLabel && (
+                <span style={{
+                  fontSize: '0.58rem', fontWeight: 800,
+                  color: question.source === 'real' ? '#86EFAC' : '#93C5FD',
+                  background: question.source === 'real' ? 'rgba(5,46,22,0.6)' : 'rgba(15,32,64,0.6)',
+                  border: `1px solid ${question.source === 'real' ? '#166534' : '#1D4ED8'}`,
+                  padding: '3px 8px', borderRadius: 999,
+                }}>
+                  {sourceLabel}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* ── Passage ── */}
+          {question.passage && (
+            <div style={{ marginBottom: 14, borderRadius: 16, overflow: 'hidden', border: '1px solid #1E293B' }}>
+              <div style={{
+                padding: '8px 14px',
+                background: 'linear-gradient(90deg, #1E293B, #0F172A)',
+                fontSize: '0.62rem', fontWeight: 900, color: '#64748B',
+                textTransform: 'uppercase', letterSpacing: 0.6,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <BookOpen size={11} color="#475569" />
+                {question.passageTitle ?? 'Texto de referência'}
+              </div>
+              <div style={{
+                maxHeight: 180, overflowY: 'auto', padding: '14px 16px',
+                background: '#060B16',
+                fontSize: '0.9rem', lineHeight: 1.75, color: '#94A3B8',
+                fontStyle: 'italic', whiteSpace: 'pre-line',
+                scrollbarWidth: 'thin', scrollbarColor: '#1E293B transparent',
+              }}>
+                {question.passage}
+              </div>
+              {question.passage.length > 280 && (
+                <div style={{ padding: '5px 14px', background: '#060B16', borderTop: '1px solid #0F172A', fontSize: '0.58rem', color: '#334155', fontWeight: 800, textAlign: 'center' }}>
+                  ↑ role para ler o texto completo ↑
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Question text ── */}
+          <div style={{
+            background: 'linear-gradient(135deg, #0F172A 0%, #0A0F1E 100%)',
+            borderRadius: 18,
+            border: '1px solid #1E293B',
+            padding: '18px 18px',
+            marginBottom: 20,
+            position: 'relative',
+            overflow: 'hidden',
           }}>
-          ⚔️ Ver Alternativas!
-        </motion.button>
+            {/* Subtle accent bar */}
+            <div style={{
+              position: 'absolute', top: 0, left: 0, bottom: 0, width: 3,
+              background: 'linear-gradient(180deg, #3B82F6, #7C3AED)',
+              borderRadius: '18px 0 0 18px',
+            }} />
+            {question.passage && (
+              <span style={{
+                display: 'block', fontSize: '0.6rem', fontWeight: 900,
+                color: '#475569', textTransform: 'uppercase', letterSpacing: 0.8,
+                marginBottom: 10, paddingLeft: 10,
+              }}>
+                Com base no texto acima:
+              </span>
+            )}
+            <p style={{
+              fontSize: '1.02rem', fontWeight: 700, lineHeight: 1.7,
+              color: '#E2E8F0', margin: 0,
+              paddingLeft: question.passage ? 10 : 8,
+            }}>
+              {question.text}
+            </p>
+          </div>
+        </div>
+
+        {/* ── Sticky CTA ── */}
+        <div style={{ padding: '14px 20px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={onReveal}
+            style={{
+              width: '100%', padding: '17px',
+              background: 'linear-gradient(135deg, #DC2626 0%, #7C3AED 100%)',
+              color: 'white', borderRadius: 18,
+              fontWeight: 900, fontSize: '1.05rem',
+              boxShadow: '0 5px 0 rgba(109,7,26,0.7), 0 0 30px rgba(220,38,38,0.25)',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              letterSpacing: 0.3,
+            }}>
+            ⚔️ Ver Alternativas!
+          </motion.button>
+          <p style={{ textAlign: 'center', fontSize: '0.62rem', color: '#1E293B', fontWeight: 700, margin: '8px 0 0' }}>
+            ou toque fora para fechar
+          </p>
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -888,7 +973,9 @@ export default function StudySwipeMode() {
 
   const [qIndex, setQIndex]           = useState(0);
   const [questionRevealed, setQuestionRevealed] = useState(false);
+  const [peekModalOpen, setPeekModalOpen] = useState(false); // re-open preview after reveal
   const [selectedIdx, setSelectedIdx] = useState<null | number>(null);
+  const [isFirstHitThisEnemy, setIsFirstHitThisEnemy] = useState(true);
   const [enemyShake, setEnemyShake]   = useState(false);
   const [enemyFlash, setEnemyFlash]   = useState(false);
   const [playerShake, setPlayerShake] = useState(false);
@@ -903,7 +990,10 @@ export default function StudySwipeMode() {
   const [shownHint, setShownHint]     = useState<number>(-1); // last hint step shown
 
   // Reset question preview on each new question
-  useEffect(() => { setQuestionRevealed(false); }, [qIndex]);
+  useEffect(() => { setQuestionRevealed(false); setPeekModalOpen(false); }, [qIndex]);
+
+  // Reset first-hit tracker when a new enemy spawns (enemy.level changes)
+  useEffect(() => { setIsFirstHitThisEnemy(true); }, [enemy.level]);
 
   // Tutorial hint timing
   useEffect(() => {
@@ -940,6 +1030,19 @@ export default function StudySwipeMode() {
     return opts;
   }, [qIndex, questionQueue]);
   const selectedOpt  = useMemo(() => selectedIdx !== null ? shuffledOpts[selectedIdx] : null, [selectedIdx, shuffledOpts]);
+
+  // Instinto Acadêmico: eliminate N wrong options from view (stable per question)
+  const eliminatedIndices = useMemo(() => {
+    const count = player.eliminateOptions ?? 0;
+    if (count <= 0 || shuffledOpts.length === 0) return new Set<number>();
+    const wrongIndices = shuffledOpts
+      .map((opt: any, i: number) => ({ i, isCorrect: opt.isCorrect }))
+      .filter((x: any) => !x.isCorrect)
+      .map((x: any) => x.i);
+    // Shuffle and take up to `count`
+    const shuffled = [...wrongIndices].sort(() => Math.random() - 0.5);
+    return new Set<number>(shuffled.slice(0, Math.min(count, wrongIndices.length - 1)));
+  }, [qIndex, questionQueue, player.eliminateOptions]);
 
   const addCoins = useCallback((n: number) => {
     setCoins(c => [...c, ...Array.from({ length: n }, (_, i) => ({ id: Date.now() + i + Math.random() }))]);
@@ -998,8 +1101,11 @@ export default function StudySwipeMode() {
     } else {
       // Offline combat
       const healAmt = player.healOnHit ?? 0;
-      const { result, isCrit, actualDmg, correct } = localAttack(opt.isCorrect);
+      const wasFirst = isFirstHitThisEnemy;
+      const { result, isCrit, actualDmg, correct, wasShielded } = localAttack(opt.isCorrect, wasFirst);
       if (correct) {
+        // After first correct hit, mark first-hit as used for this enemy
+        if (wasFirst) setIsFirstHitThisEnemy(false);
         setAttackIsCrit(isCrit);
         setAttackVisible(true);
         setTimeout(() => setAttackVisible(false), 420);
@@ -1011,6 +1117,8 @@ export default function StudySwipeMode() {
         triggerFlash(isCrit ? '#78350F' : '#162040');
         incrementStreak();
         const healSuffix = healAmt > 0 ? ` ♥+${healAmt}` : '';
+        const firstSuffix = wasFirst && player.firstHitBonus ? ' ⚡×2' : '';
+        const streakSuffix = (player.streakDmgBonus ?? 0) > 0 && streak > 0 ? ` 🔥×${(1 + Math.min(streak, 10) * (player.streakDmgBonus ?? 0)).toFixed(1)}` : '';
         if (result === 'dead') {
           collectGold(20 + enemy.level * 5);
           addCoins(Math.min(8, 3 + Math.floor(enemy.level / 2)));
@@ -1018,16 +1126,23 @@ export default function StudySwipeMode() {
           setCombatLog(`☠️ ${enemy.name} derrotado! +ouro${healSuffix}`);
           if (isTutorial && tutorialStep >= 1) advanceTutorial();
         } else {
-          setCombatLog(isCrit ? `⚡ CRÍTICO! −${actualDmg} HP${healSuffix}` : `⚔️ Acertou! −${actualDmg} HP${healSuffix}`);
+          setCombatLog(isCrit ? `⚡ CRÍTICO! −${actualDmg} HP${healSuffix}` : `⚔️ Acertou! −${actualDmg} HP${firstSuffix}${streakSuffix}${healSuffix}`);
         }
       } else {
-        playSound('damage');
-        triggerFlash('#3D0A0A');
-        setPlayerShake(true);
-        setTimeout(() => setPlayerShake(false), 400);
-        resetStreak();
-        const modSuffix = enemy.modifier === 'enraged' ? ' 💢×1.5' : enemy.modifier === 'regen' ? ' 💚+6' : '';
-        setCombatLog(`💢 Errou! −${actualDmg} HP${modSuffix}`);
+        if (wasShielded) {
+          // Shield absorbed — no damage, no player shake
+          setCombatLog(`🔰 Escudo Arcano! Dano bloqueado.`);
+        } else {
+          playSound('damage');
+          triggerFlash('#3D0A0A');
+          setPlayerShake(true);
+          setTimeout(() => setPlayerShake(false), 400);
+          resetStreak();
+          const modSuffix = enemy.modifier === 'enraged' ? ' 💢×1.5' : enemy.modifier === 'regen' ? ' 💚+6' : '';
+          // shieldedHits is already decremented in store after this wrong answer
+          const shieldNote = (player.shieldedHits ?? 0) > 1 ? ` 🔰${(player.shieldedHits ?? 0) - 1} restantes` : '';
+          setCombatLog(`💢 Errou! −${actualDmg} HP${modSuffix}${shieldNote}`);
+        }
       }
     }
   };
@@ -1187,11 +1302,19 @@ export default function StudySwipeMode() {
                   <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#93C5FD' }}>IA</span>
                 </div>
               )}
-              {currentQ.topic && (
-                <span style={{ fontSize: '0.6rem', color: '#334155', fontWeight: 700, marginLeft: 'auto' }}>
-                  {currentQ.topic}
-                </span>
-              )}
+              {/* ── Re-open preview button ── */}
+              <motion.button
+                whileTap={{ scale: 0.93 }}
+                onClick={() => setPeekModalOpen(true)}
+                style={{
+                  marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '3px 9px', borderRadius: 999,
+                  background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)',
+                  color: '#818CF8', fontSize: '0.6rem', fontWeight: 800,
+                  cursor: 'pointer',
+                }}>
+                👁 Reler
+              </motion.button>
             </div>
 
             {/* ── Optional image ── */}
@@ -1262,12 +1385,27 @@ export default function StudySwipeMode() {
               {currentQ.text}
             </div>
 
+            {/* Instinto Acadêmico indicator */}
+            {(player.eliminateOptions ?? 0) > 0 && selectedIdx === null && eliminatedIndices.size > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                marginBottom: 8, padding: '5px 10px', borderRadius: 8,
+                background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+              }}>
+                <span style={{ fontSize: '0.85rem' }}>🔍</span>
+                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#818CF8' }}>
+                  Instinto Acadêmico eliminou {eliminatedIndices.size} alternativa{eliminatedIndices.size > 1 ? 's' : ''} errada{eliminatedIndices.size > 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
+
             {/* Answer options */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {shuffledOpts.map((opt: any, i: number) => {
                 const isSel = selectedIdx === i;
                 const isRev = selectedIdx !== null;
                 const isCorrect = opt.isCorrect;
+                const isEliminated = !isRev && eliminatedIndices.has(i);
 
                 let bg = '#111827';
                 let border = 'rgba(255,255,255,0.06)';
@@ -1275,19 +1413,22 @@ export default function StudySwipeMode() {
                 let opacity = 1;
                 let icon = null;
 
+                if (isEliminated) {
+                  bg = '#0A0F1E'; border = 'rgba(99,102,241,0.15)'; txtColor = '#334155'; opacity = 0.45;
+                }
                 if (isRev) {
-                  if (isCorrect)         { bg = '#052E16'; border = '#22C55E'; txtColor = '#86EFAC'; icon = '✅'; }
-                  else if (isSel)        { bg = '#2D0A0A'; border = '#EF4444'; txtColor = '#FCA5A5'; icon = '❌'; }
+                  if (isCorrect)         { bg = '#052E16'; border = '#22C55E'; txtColor = '#86EFAC'; icon = '✅'; opacity = 1; }
+                  else if (isSel)        { bg = '#2D0A0A'; border = '#EF4444'; txtColor = '#FCA5A5'; icon = '❌'; opacity = 1; }
                   else                   { opacity = 0.25; }
                 }
 
                 return (
                   <motion.button
                     key={i}
-                    onClick={() => handleSelect(i)}
-                    disabled={isRev || isGameOver}
+                    onClick={() => !isEliminated && handleSelect(i)}
+                    disabled={isRev || isGameOver || isEliminated}
                     animate={isSel && !isCorrect ? { x: [-10, 10, -6, 6, 0] } : {}}
-                    whileTap={!isRev ? { scale: 0.985 } : {}}
+                    whileTap={!isRev && !isEliminated ? { scale: 0.985 } : {}}
                     style={{
                       textAlign: 'left', padding: '14px 16px', borderRadius: 14,
                       backgroundColor: bg,
@@ -1297,8 +1438,10 @@ export default function StudySwipeMode() {
                       transition: 'all 0.18s',
                       display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10,
                       boxShadow: isRev ? 'none' : '0 2px 0 rgba(0,0,0,0.4)',
+                      cursor: isEliminated ? 'not-allowed' : undefined,
                     }}>
-                    <span style={{ flex: 1 }}>{opt.text}</span>
+                    <span style={{ flex: 1, textDecoration: isEliminated ? 'line-through' : 'none' }}>{opt.text}</span>
+                    {isEliminated && <span style={{ flexShrink: 0, fontSize: '0.7rem', color: '#4338CA', fontWeight: 800 }}>🔍</span>}
                     {isRev && icon && <span style={{ flexShrink: 0, marginTop: 1 }}>{icon}</span>}
                   </motion.button>
                 );
@@ -1366,10 +1509,14 @@ export default function StudySwipeMode() {
         )}
       </AnimatePresence>
 
-      {/* ── Question Preview Modal ── */}
+      {/* ── Question Preview Modal (initial + re-open peek) ── */}
       <AnimatePresence>
-        {!questionRevealed && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && currentQ && (
-          <QuestionPreviewModal key={`preview-${qIndex}`} question={currentQ} onReveal={() => setQuestionRevealed(true)} />
+        {(!questionRevealed || peekModalOpen) && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && currentQ && (
+          <QuestionPreviewModal
+            key={`preview-${qIndex}-${peekModalOpen ? 'peek' : 'initial'}`}
+            question={currentQ}
+            onReveal={() => { setQuestionRevealed(true); setPeekModalOpen(false); }}
+          />
         )}
       </AnimatePresence>
 
