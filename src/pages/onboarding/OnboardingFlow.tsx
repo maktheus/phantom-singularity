@@ -7,7 +7,7 @@
  * 5. Human / conversational copy (video 2:13)
  * 6. Long but feels short via animation + progress (video 5:44)
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Target, Trophy, Crown } from 'lucide-react';
@@ -345,7 +345,7 @@ function FinishStep({ onFinish }: { onFinish: () => void }) {
   const [phase, setPhase] = useState<'loading' | 'done'>('loading');
   const [progress, setProgress] = useState(0);
 
-  useState(() => {
+  useEffect(() => {
     const id = setInterval(() => {
       setProgress(p => {
         if (p >= 100) { clearInterval(id); setPhase('done'); return 100; }
@@ -353,7 +353,7 @@ function FinishStep({ onFinish }: { onFinish: () => void }) {
       });
     }, 60);
     return () => clearInterval(id);
-  });
+  }, []);
 
   return (
     <Slide>

@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, Component } from 'react';
+import type { ReactNode } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import OnboardingFlow from './pages/onboarding/OnboardingFlow';
@@ -175,11 +176,53 @@ function AppContent() {
   );
 }
 
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      const err = this.state.error as Error;
+      return (
+        <div style={{
+          minHeight: '100dvh', backgroundColor: '#0A0F1E', color: 'white',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: 32, textAlign: 'center', gap: 16,
+        }}>
+          <div style={{ fontSize: '3rem' }}>💥</div>
+          <h2 style={{ fontWeight: 900, color: '#EF4444', margin: 0 }}>Algo deu errado</h2>
+          <p style={{ color: '#475569', fontSize: '0.85rem', maxWidth: 320 }}>{err.message}</p>
+          <button
+            onClick={() => {
+              localStorage.removeItem('phantom-rpg-v3-save');
+              window.location.reload();
+            }}
+            style={{
+              padding: '12px 24px', borderRadius: 12, fontWeight: 800,
+              background: 'linear-gradient(135deg,#3B82F6,#6D28D9)',
+              color: 'white', fontSize: '0.9rem', cursor: 'pointer', border: 'none',
+            }}>
+            🔄 Resetar e reiniciar
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ color: '#334155', fontSize: '0.8rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>
+            Tentar novamente
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   return (
-    <HashRouter>
-      <AppContent />
-    </HashRouter>
+    <ErrorBoundary>
+      <HashRouter>
+        <AppContent />
+      </HashRouter>
+    </ErrorBoundary>
   );
 }
 

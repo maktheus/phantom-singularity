@@ -570,13 +570,15 @@ export const useAppStore = create<GameState>()(
         let newPlayer = template.apply(player, 1);
 
         if (evo) {
-          const evoTemplate = ITEM_POOL.find(x => x.id === evo.evolution)!;
-          finalItems = allItems.filter(x => x.id !== evo.weaponId);
-          finalItems.push({ ...evoTemplate, level: 1 });
-          newPlayer = evoTemplate.apply(newPlayer, 1);
+          const evoTemplate = ITEM_POOL.find(x => x.id === evo.evolution);
+          if (evoTemplate) {
+            finalItems = allItems.filter(x => x.id !== evo.weaponId);
+            finalItems.push({ ...evoTemplate, level: 1 });
+            newPlayer = evoTemplate.apply(newPlayer, 1);
+          }
         }
 
-        set({ runItems: finalItems, player: newPlayer, pendingItemDrop: false, lastEvolvedItem: evo ? evo.evolution : null });
+        set({ runItems: finalItems, player: newPlayer, pendingItemDrop: false, lastEvolvedItem: evo?.evolution ?? null });
       },
 
       levelUpItem: (itemId) => {
@@ -594,10 +596,12 @@ export const useAppStore = create<GameState>()(
         let finalItems = updatedItems;
         let finalPlayer = newPlayer;
         if (evo) {
-          const evoTemplate = ITEM_POOL.find(x => x.id === evo.evolution)!;
-          finalItems = updatedItems.filter(x => x.id !== evo.weaponId);
-          finalItems.push({ ...evoTemplate, level: 1 });
-          finalPlayer = evoTemplate.apply(finalPlayer, 1);
+          const evoTemplate = ITEM_POOL.find(x => x.id === evo.evolution);
+          if (evoTemplate) {
+            finalItems = updatedItems.filter(x => x.id !== evo.weaponId);
+            finalItems.push({ ...evoTemplate, level: 1 });
+            finalPlayer = evoTemplate.apply(finalPlayer, 1);
+          }
         }
 
         set({ runItems: finalItems, player: finalPlayer, lastEvolvedItem: evo ? evo.evolution : null });
