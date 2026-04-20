@@ -100,7 +100,19 @@ export default function SettingsPage() {
             t={t}
             right={
               <motion.button whileTap={{ scale: 0.94 }}
-                onClick={() => { resetOnboarding(); navigate('/onboarding'); }}
+                onClick={() => {
+                  resetOnboarding();
+                  // Also clear any cached value in localStorage so persist picks up the reset
+                  try {
+                    const raw = localStorage.getItem('phantom-rpg-v3-save');
+                    if (raw) {
+                      const parsed = JSON.parse(raw);
+                      if (parsed?.state) parsed.state.hasOnboarded = false;
+                      localStorage.setItem('phantom-rpg-v3-save', JSON.stringify(parsed));
+                    }
+                  } catch { /* ignore */ }
+                  navigate('/onboarding');
+                }}
                 style={{
                   padding: '8px 14px', borderRadius: 10, fontWeight: 800, fontSize: '0.82rem',
                   background: 'linear-gradient(135deg,#7C3AED,#4C1D95)',
