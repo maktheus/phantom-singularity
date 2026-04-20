@@ -190,6 +190,7 @@ interface GameState {
 
   // Actions
   setHasOnboarded: () => void;
+  resetOnboarding: () => void;
   startRun: (build: BuildType, concursoId?: string) => Promise<void>;
   attackEnemy: (questionId: string, chosenIndex: number, ms: number) => Promise<{ result: 'alive' | 'dead'; isCrit: boolean; actualDmg: number; correct: boolean; tip: string }>;
   /** Full offline combat: updates enemy HP + player HP locally, returns combat result */
@@ -355,6 +356,7 @@ export const useAppStore = create<GameState>()(
       todayStats: { questions: 0, kills: 0, goldEarned: 0, runsCompleted: 0 },
 
       setHasOnboarded: () => set({ hasOnboarded: true }),
+      resetOnboarding: () => set({ hasOnboarded: false }),
 
       startRun: async (build, concursoId) => {
         const { permanentUpgrades } = get();
@@ -510,9 +512,9 @@ export const useAppStore = create<GameState>()(
           newPlayer = { ...newPlayer, hp: Math.min(newPlayer.maxHp, newPlayer.hp + 20) };
         }
 
-        // Every kill: offer power-ups; after boss: offer item chest
-        const pending = rollPowerUps();
+        // Every kill: offer power-ups; boss / every 3rd kill: item chest instead
         const dropItem = isBoss || newKills % 3 === 0;
+        const pending  = dropItem ? null : rollPowerUps(); // item chest replaces power-ups
 
         const ts = get().todayStats;
         set({

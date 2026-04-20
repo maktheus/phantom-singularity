@@ -614,6 +614,93 @@ function EvolutionRevealModal({ itemId, onConfirm }: { itemId: string; onConfirm
   );
 }
 
+// ─── Build Strip ─────────────────────────────────────────────────────────────
+// Compact item bar shown during combat: shows items + evolution readiness
+function BuildStrip({ runItems, onPress }: { runItems: RunItem[]; onPress: () => void }) {
+  if (runItems.length === 0) return null;
+
+  // Detect which items are ready to evolve
+  const readyIds = new Set<string>();
+  for (const [key, evoId] of Object.entries(EVOLUTION_TABLE)) {
+    const [wId, pId] = key.split('+');
+    const w = runItems.find(x => x.id === wId);
+    const p = runItems.find(x => x.id === pId);
+    if (w && w.level >= w.maxLevel && p) {
+      readyIds.add(wId);
+      readyIds.add(pId);
+      readyIds.add(evoId); // evolved item if present
+    }
+  }
+  const hasEvoReady = readyIds.size > 0;
+
+  return (
+    <motion.button
+      onClick={onPress}
+      animate={hasEvoReady ? {
+        borderColor: ['rgba(251,191,36,0.3)', 'rgba(251,191,36,0.9)', 'rgba(251,191,36,0.3)'],
+      } : {}}
+      transition={{ repeat: Infinity, duration: 1.8 }}
+      style={{
+        width: '100%', flexShrink: 0, display: 'flex', alignItems: 'center',
+        padding: '6px 14px', gap: 8,
+        background: hasEvoReady
+          ? 'linear-gradient(90deg, rgba(45,21,0,0.9), rgba(10,15,30,0.95))'
+          : 'rgba(10,15,30,0.92)',
+        borderTop: 'none',
+        borderBottom: `1px solid ${hasEvoReady ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.04)'}`,
+        cursor: 'pointer',
+      }}>
+
+      {/* Items row */}
+      <div style={{ display: 'flex', gap: 6, flex: 1, overflowX: 'auto', scrollbarWidth: 'none' }}>
+        {runItems.map(item => {
+          const isReady = readyIds.has(item.id);
+          const color = isReady ? '#FBBF24' : (item.rarity === 'legendary' ? '#FBBF24' : item.rarity === 'rare' ? '#A78BFA' : '#60A5FA');
+          return (
+            <motion.div key={item.id}
+              animate={isReady ? { boxShadow: ['0 0 0px #FBBF2400', '0 0 8px #FBBF2480', '0 0 0px #FBBF2400'] } : {}}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
+                padding: '3px 8px', borderRadius: 8,
+                background: isReady ? 'rgba(45,21,0,0.8)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${isReady ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.06)'}`,
+              }}>
+              <span style={{ fontSize: '1rem', lineHeight: 1 }}>{item.emoji}</span>
+              {/* Level pips */}
+              <div style={{ display: 'flex', gap: 2 }}>
+                {Array.from({ length: item.maxLevel }).map((_, i) => (
+                  <div key={i} style={{
+                    width: 4, height: 4, borderRadius: '50%',
+                    background: i < item.level ? color : 'rgba(255,255,255,0.12)',
+                  }} />
+                ))}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Right: evo indicator or bag icon */}
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {hasEvoReady ? (
+          <motion.span
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ repeat: Infinity, duration: 1 }}
+            style={{ fontSize: '0.65rem', fontWeight: 900, color: '#FBBF24' }}>
+            ⚡ PRONTO
+          </motion.span>
+        ) : (
+          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#334155' }}>
+            🎒 {runItems.length}
+          </span>
+        )}
+        <span style={{ fontSize: '0.55rem', color: '#334155' }}>›</span>
+      </div>
+    </motion.button>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function StudySwipeMode() {
   const navigate = useNavigate();
@@ -825,6 +912,9 @@ export default function StudySwipeMode() {
           <span style={{ fontWeight: 900, fontSize: '0.9rem', color: '#FBBF24' }}>{gold}</span>
         </div>
       </div>
+
+      {/* ── Build Strip ── */}
+      <BuildStrip runItems={runItems} onPress={() => navigate('/items')} />
 
       {/* ── Battle Arena ── */}
       <BattleArena

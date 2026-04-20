@@ -14,15 +14,13 @@ import { useAuthStore } from './services/authStore';
 import { useAppStore } from './store/useAppStore';
 
 // Pages that show the bottom navigation bar
-const NAV_PAGES = ['/home', '/select', '/hero', '/law'];
+const NAV_PAGES = ['/home', '/select'];
 // Height of bottom nav bar (px) — used to offset CTA buttons above it
-export const NAV_HEIGHT = 72;
+export const NAV_HEIGHT = 64;
 
 const NAV_ITEMS = [
   { path: '/home',   icon: '⛺', label: 'Base'    },
   { path: '/select', icon: '📚', label: 'Estudar' },
-  { path: '/hero',   icon: '👤', label: 'Herói'   },
-  { path: '/law',    icon: '⚖️',  label: 'Leis'   },
 ];
 
 function BottomNavbar() {

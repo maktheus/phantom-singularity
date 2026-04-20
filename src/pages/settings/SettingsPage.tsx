@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Moon, Sun, Volume2, VolumeX, Trash2, Info } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Volume2, VolumeX, Trash2, Info, RotateCcw } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTheme } from '../../hooks/useTheme';
 import type { Theme } from '../../hooks/useTheme';
@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [sound, setSound] = useState(true);
   const [confirmReset, setConfirmReset] = useState(false);
   const respawn = useAppStore(s => s.respawn);
+  const resetOnboarding = useAppStore(s => s.resetOnboarding);
 
   const isDark = theme === 'dark';
 
@@ -85,6 +86,27 @@ export default function SettingsPage() {
                   cursor: 'pointer',
                 }}>
                 {confirmReset ? 'Confirmar' : 'Resetar'}
+              </motion.button>
+            }
+          />
+        </SectionCard>
+
+        {/* Reset Onboarding */}
+        <SectionCard t={t}>
+          <SectionRow
+            icon={<RotateCcw size={18} color="#8B5CF6" />}
+            label="Ver Tutorial Novamente"
+            sub="Recomeça o onboarding do zero"
+            t={t}
+            right={
+              <motion.button whileTap={{ scale: 0.94 }}
+                onClick={() => { resetOnboarding(); navigate('/onboarding'); }}
+                style={{
+                  padding: '8px 14px', borderRadius: 10, fontWeight: 800, fontSize: '0.82rem',
+                  background: 'linear-gradient(135deg,#7C3AED,#4C1D95)',
+                  color: 'white', border: 'none', cursor: 'pointer',
+                }}>
+                Ver →
               </motion.button>
             }
           />
