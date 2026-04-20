@@ -10,44 +10,152 @@ import '../../pixelart.css';
 
 export const FREE_DAILY_PLAYS = 3;
 
-// ─── Tiny camp scene (compact) ───────────────────────────────────────────────
+// ─── Camp Scene — hero in focus ──────────────────────────────────────────────
 function CampScene() {
+  const player      = useAppStore(s => s.player);
+  const gold        = useAppStore(s => s.gold);
+  const dailyStreak = useAppStore(s => s.dailyStreak);
+  const killCount   = useAppStore(s => s.killCount);
+
+  const buildEmoji = player.build === 'warrior' ? '⚔️' : player.build === 'mage' ? '🔮' : '🗡️';
+  const buildColor = player.build === 'warrior' ? '#EF4444' : player.build === 'mage' ? '#8B5CF6' : '#22C55E';
+  const buildName  = player.build === 'warrior' ? 'Guerreiro' : player.build === 'mage' ? 'Mago' : 'Ladino';
+
   return (
     <div className="pixel-art" style={{
-      position: 'relative', width: '100%', height: 100, overflow: 'hidden',
-      background: 'linear-gradient(180deg, #0B1120 0%, #1C1917 65%, #292524 100%)',
+      position: 'relative', width: '100%', height: 240, overflow: 'hidden',
+      background: 'linear-gradient(180deg, #020916 0%, #050E1F 35%, #0A1828 60%, #111A12 80%, #1C1917 100%)',
     }}>
-      {['✦','✧','✦','✧','✦'].map((s, i) => (
-        <motion.span key={i} animate={{ opacity: [0.3, 1, 0.3] }}
-          transition={{ repeat: Infinity, duration: 2 + i * 0.5, delay: i * 0.3 }}
-          style={{ position: 'absolute', top: 4 + (i % 2) * 10, left: 10 + i * 60, fontSize: 8, color: '#94A3B8' }}>
-          {s}
-        </motion.span>
+      {/* ── Stars ── */}
+      {[...Array(18)].map((_, i) => (
+        <motion.div key={i}
+          animate={{ opacity: [0.2 + (i % 3) * 0.2, 1, 0.2 + (i % 3) * 0.2] }}
+          transition={{ repeat: Infinity, duration: 1.8 + (i % 5) * 0.6, delay: i * 0.17 }}
+          style={{
+            position: 'absolute',
+            top: 2 + (i % 6) * 7,
+            left: `${4 + i * 5.2}%`,
+            width: i % 4 === 0 ? 3 : 2, height: i % 4 === 0 ? 3 : 2,
+            borderRadius: '50%', backgroundColor: '#E2E8F0',
+          }} />
       ))}
-      <div style={{ position: 'absolute', top: 6, right: 20, fontSize: '1.1rem', opacity: 0.65 }}>🌙</div>
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, backgroundColor: '#292524', borderTop: '2px solid #44403C' }} />
-      {[6, 72, 85].map((pct, i) => (
-        <div key={i} style={{ position: 'absolute', bottom: 18, left: `${pct}%` }}>
-          <motion.div animate={{ y: [0,-2,0] }} transition={{ repeat: Infinity, duration: 3 + i * 0.6, delay: i }}>
-            <span style={{ fontSize: i===1 ? '2rem' : '1.6rem', filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.8))' }}>🌲</span>
-          </motion.div>
-        </div>
+
+      {/* ── Moon ── */}
+      <motion.div
+        animate={{ y: [0, -2, 0] }}
+        transition={{ repeat: Infinity, duration: 5 }}
+        style={{ position: 'absolute', top: 10, right: 22, fontSize: '1.4rem', opacity: 0.8 }}>
+        🌙
+      </motion.div>
+
+      {/* ── Mountain silhouette ── */}
+      <div style={{ position: 'absolute', bottom: 64, left: 0, right: 0, display: 'flex', alignItems: 'flex-end' }}>
+        {[{ w: 90, h: 55, l: -10 }, { w: 120, h: 72, l: 50 }, { w: 80, h: 48, l: 150 }, { w: 140, h: 80, l: 220 }, { w: 90, h: 52, l: 330 }, { w: 110, h: 65, l: 420 }].map((m, i) => (
+          <div key={i} style={{
+            position: 'absolute', left: m.l, bottom: 0,
+            width: 0, height: 0,
+            borderLeft: `${m.w / 2}px solid transparent`,
+            borderRight: `${m.w / 2}px solid transparent`,
+            borderBottom: `${m.h}px solid #0B1A0F`,
+            opacity: 0.7 + (i % 2) * 0.2,
+          }} />
+        ))}
+      </div>
+
+      {/* ── Ground strip ── */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 64, backgroundColor: '#1C2410', borderTop: '2px solid #2D3B1A' }} />
+      <div style={{ position: 'absolute', bottom: 62, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, transparent, #3D5A22 20%, #3D5A22 80%, transparent)' }} />
+
+      {/* ── Trees (behind hero) ── */}
+      {[{ l: '4%', s: '1.7rem', d: 3.2 }, { l: '14%', s: '2.1rem', d: 2.8 }, { l: '72%', s: '2rem', d: 3.5 }, { l: '84%', s: '1.8rem', d: 2.5 }, { l: '92%', s: '2.2rem', d: 4 }].map((t, i) => (
+        <motion.div key={i}
+          animate={{ y: [0, -2, 0] }}
+          transition={{ repeat: Infinity, duration: t.d, delay: i * 0.4 }}
+          style={{ position: 'absolute', bottom: 60, left: t.l, fontSize: t.s, filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.7))' }}>
+          🌲
+        </motion.div>
       ))}
-      <motion.div animate={{ y: [0,-2,0] }} transition={{ repeat: Infinity, duration: 4 }}
-        style={{ position: 'absolute', bottom: 20, left: '36%', fontSize: '2.2rem', filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.6))' }}>⛺</motion.div>
-      <motion.div animate={{ scale: [1, 1.18, 0.9, 1.1, 1] }} transition={{ repeat: Infinity, duration: 0.7 }}
-        style={{ position: 'absolute', bottom: 22, left: '53%', fontSize: '1.5rem' }}>🔥</motion.div>
-      <motion.div animate={{ y: [0,-4,0] }} transition={{ repeat: Infinity, duration: 2, delay: 0.3 }}
-        style={{ position: 'absolute', bottom: 19, left: '44%', fontSize: '1.7rem' }}>🧙</motion.div>
-      <div className="scanlines" />
+
+      {/* ── Tent ── */}
+      <div style={{ position: 'absolute', bottom: 60, left: '22%', fontSize: '2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.6))' }}>⛺</div>
+
+      {/* ── Campfire ── */}
+      <motion.div
+        animate={{ scale: [1, 1.15, 0.92, 1.08, 1] }}
+        transition={{ repeat: Infinity, duration: 0.6 }}
+        style={{ position: 'absolute', bottom: 62, left: '38%', fontSize: '1.6rem' }}>
+        🔥
+      </motion.div>
+      {/* Fire glow on ground */}
+      <div style={{ position: 'absolute', bottom: 62, left: 'calc(38% - 12px)', width: 36, height: 14, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(251,146,60,0.35) 0%, transparent 70%)', filter: 'blur(4px)' }} />
+
+      {/* ── HERO — center, large ── */}
+      <div style={{ position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)' }}>
+        {/* Hero glow */}
+        <div style={{
+          position: 'absolute', inset: -20, borderRadius: '50%',
+          background: `radial-gradient(circle, ${buildColor}30 0%, transparent 65%)`,
+          pointerEvents: 'none',
+        }} />
+        <motion.div
+          animate={{ y: [0, -8, 0] }}
+          transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
+          style={{ fontSize: '3.8rem', lineHeight: 1, filter: `drop-shadow(0 6px 18px ${buildColor}70)`, position: 'relative' }}>
+          {buildEmoji}
+        </motion.div>
+        {/* Class label */}
+        <div style={{
+          textAlign: 'center', marginTop: 4,
+          fontSize: '0.5rem', fontWeight: 900, color: buildColor,
+          textTransform: 'uppercase', letterSpacing: 1,
+          textShadow: `0 0 8px ${buildColor}`,
+        }}>{buildName}</div>
+      </div>
+
+      {/* ── HUD overlays ── */}
+      {/* Top-left: streak */}
+      <div style={{ position: 'absolute', top: 10, left: 12, display: 'flex', alignItems: 'center', gap: 5,
+        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
+        borderRadius: 10, padding: '4px 10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <span style={{ fontSize: '0.9rem' }}>{dailyStreak >= 3 ? '🔥' : '💤'}</span>
+        <span style={{ fontWeight: 900, fontSize: '0.72rem', color: dailyStreak > 0 ? '#FB923C' : '#475569' }}>
+          {dailyStreak}d streak
+        </span>
+      </div>
+
+      {/* Top-right: gold */}
+      <div style={{ position: 'absolute', top: 10, right: 12, display: 'flex', alignItems: 'center', gap: 5,
+        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
+        borderRadius: 10, padding: '4px 10px', border: '1px solid rgba(251,191,36,0.15)' }}>
+        <span style={{ fontSize: '0.85rem' }}>🪙</span>
+        <span style={{ fontWeight: 900, fontSize: '0.75rem', color: '#FBBF24' }}>{gold}</span>
+      </div>
+
+      {/* Bottom-left: kills */}
+      <div style={{ position: 'absolute', bottom: 6, left: 12, display: 'flex', alignItems: 'center', gap: 5,
+        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
+        borderRadius: 10, padding: '4px 10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <span style={{ fontSize: '0.85rem' }}>💀</span>
+        <span style={{ fontWeight: 800, fontSize: '0.7rem', color: '#F87171' }}>{killCount} kills</span>
+      </div>
+
+      {/* Bottom-right: HP */}
+      <div style={{ position: 'absolute', bottom: 6, right: 12, display: 'flex', alignItems: 'center', gap: 5,
+        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
+        borderRadius: 10, padding: '4px 10px', border: '1px solid rgba(34,197,94,0.15)' }}>
+        <span style={{ fontSize: '0.85rem' }}>❤️</span>
+        <span style={{ fontWeight: 800, fontSize: '0.7rem', color: '#34D399' }}>{player.hp}/{player.maxHp}</span>
+      </div>
+
+      <div className="scanlines" style={{ position: 'absolute', inset: 0 }} />
     </div>
   );
 }
 
 const BUILD_INFO = {
-  warrior: { emoji: '⚔️', name: 'Guerreiro', stat: '150 HP · 22 Dano · 5% Crit', color: '#EF4444', desc: 'Tanque. Sobrevive ao erro.' },
-  mage:    { emoji: '🔮', name: 'Mago',       stat: '80 HP · 35 Dano · 12% Crit', color: '#8B5CF6', desc: 'Alto risco. Acertar é obrigatório.' },
-  rogue:   { emoji: '🗡️', name: 'Ladino',    stat: '100 HP · 18 Dano · 25% Crit', color: '#22C55E', desc: '1.5× Ouro. Vive de crits.' },
+  warrior: { emoji: '⚔️', name: 'Guerreiro', stat: '160 HP · 30 Dano · 8% Crit',  color: '#EF4444', desc: 'Tanque. Mata rápido, sobrevive ao erro.' },
+  mage:    { emoji: '🔮', name: 'Mago',       stat: '72 HP · 55 Dano · 22% Crit',  color: '#8B5CF6', desc: 'Crit = 137 dano. Não erre.' },
+  rogue:   { emoji: '🗡️', name: 'Ladino',    stat: '110 HP · 24 Dano · 35% Crit', color: '#22C55E', desc: '2.2× Ouro. Crit constante.' },
 };
 
 // ─── Energy dots ─────────────────────────────────────────────────────────────
@@ -247,6 +355,7 @@ export default function HomeLoop() {
   } = useAppStore();
   const pendingCosmeticChest = useAppStore(s => s.pendingCosmeticChest);
   const setPendingCosmeticChest = useAppStore(s => s.setPendingCosmeticChest);
+  const unlockedBuilds = useAppStore(s => s.unlockedBuilds);
 
   const [buyFeedback, setBuyFeedback] = useState<{ id: string; ok: boolean } | null>(null);
   const [showBuildSelect, setShowBuildSelect] = useState(false);
@@ -323,28 +432,38 @@ export default function HomeLoop() {
                 Upgrades permanentes são mantidos entre runs
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {(Object.entries(BUILD_INFO) as [BuildType, typeof BUILD_INFO.warrior][]).map(([key, b]) => (
-                  <motion.button key={key} whileTap={{ scale: 0.97 }} onClick={() => handleStartRun(key)}
-                    style={{
-                      padding: '16px 18px', borderRadius: 16, backgroundColor: '#111827',
-                      border: `2px solid ${b.color}30`, color: 'white', textAlign: 'left',
-                      display: 'flex', gap: 14, alignItems: 'center',
-                      boxShadow: `0 4px 0 rgba(0,0,0,0.4), inset 0 0 20px ${b.color}06`,
-                    }}>
-                    <div style={{
-                      width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                      background: `linear-gradient(135deg, ${b.color}20, ${b.color}08)`,
-                      border: `1.5px solid ${b.color}30`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem',
-                    }}>{b.emoji}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 900, fontSize: '1rem', color: b.color }}>{b.name}</div>
-                      <div style={{ color: '#475569', fontSize: '0.75rem', fontWeight: 700, marginTop: 1 }}>{b.stat}</div>
-                      <div style={{ color: '#CBD5E1', fontSize: '0.82rem', fontWeight: 600, marginTop: 3 }}>{b.desc}</div>
-                    </div>
-                    <div style={{ width: 32, height: 32, borderRadius: 10, background: `${b.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: b.color }}>▶</div>
-                  </motion.button>
-                ))}
+                {(Object.entries(BUILD_INFO) as [BuildType, typeof BUILD_INFO.warrior][]).map(([key, b]) => {
+                  const isLocked = !unlockedBuilds.includes(key);
+                  const unlockAt = key === 'mage' ? '3 kills' : key === 'rogue' ? '10 kills' : null;
+                  return (
+                    <motion.button key={key} whileTap={isLocked ? {} : { scale: 0.97 }}
+                      onClick={() => !isLocked && handleStartRun(key)}
+                      style={{
+                        padding: '16px 18px', borderRadius: 16, backgroundColor: isLocked ? '#0A0F1E' : '#111827',
+                        border: `2px solid ${isLocked ? '#1E293B' : b.color + '30'}`, color: isLocked ? '#334155' : 'white', textAlign: 'left',
+                        display: 'flex', gap: 14, alignItems: 'center',
+                        boxShadow: isLocked ? 'none' : `0 4px 0 rgba(0,0,0,0.4), inset 0 0 20px ${b.color}06`,
+                        opacity: isLocked ? 0.5 : 1, cursor: isLocked ? 'default' : 'pointer',
+                      }}>
+                      <div style={{
+                        width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+                        background: isLocked ? '#111827' : `linear-gradient(135deg, ${b.color}20, ${b.color}08)`,
+                        border: `1.5px solid ${isLocked ? '#1E293B' : b.color + '30'}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem',
+                      }}>{isLocked ? '🔒' : b.emoji}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 900, fontSize: '1rem', color: isLocked ? '#334155' : b.color }}>{b.name}</div>
+                        <div style={{ color: '#475569', fontSize: '0.75rem', fontWeight: 700, marginTop: 1 }}>
+                          {isLocked ? `Desbloqueie com ${unlockAt}` : b.stat}
+                        </div>
+                        {!isLocked && <div style={{ color: '#CBD5E1', fontSize: '0.82rem', fontWeight: 600, marginTop: 3 }}>{b.desc}</div>}
+                      </div>
+                      {!isLocked && (
+                        <div style={{ width: 32, height: 32, borderRadius: 10, background: `${b.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: b.color }}>▶</div>
+                      )}
+                    </motion.button>
+                  );
+                })}
               </div>
               <button onClick={() => setShowBuildSelect(false)}
                 style={{ marginTop: 14, width: '100%', padding: '12px', color: '#475569', fontWeight: 700 }}>

@@ -402,9 +402,9 @@ export default function StudySelect() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {([
-            { build: 'warrior', emoji: '⚔️', name: 'GUERREIRO', sub: '150HP · 22 Dano · 5% Crit',  color: '#EF4444', desc: 'Tanque. Aguenta erros.' },
-            { build: 'mage',    emoji: '🔮', name: 'MAGO',      sub: '80HP · 35 Dano · 12% Crit',  color: '#8B5CF6', desc: 'Mata rápido. Não pode errar.' },
-            { build: 'rogue',   emoji: '🗡️', name: 'LADINO',   sub: '100HP · 18 Dano · 25% Crit', color: '#22C55E', desc: '1.5× Ouro. Rei dos crits.' },
+            { build: 'warrior', emoji: '⚔️', name: 'GUERREIRO', sub: '160HP · 30 Dano · 8% Crit',  color: '#EF4444', desc: 'Tanque. Mata rápido, aguenta erros.' },
+            { build: 'mage',    emoji: '🔮', name: 'MAGO',      sub: '72HP · 55 Dano · 22% Crit',  color: '#8B5CF6', desc: 'Crit = 137 dano. Não erre nunca.' },
+            { build: 'rogue',   emoji: '🗡️', name: 'LADINO',   sub: '110HP · 24 Dano · 35% Crit', color: '#22C55E', desc: '2.2× Ouro. Crit a cada 3 acertos.' },
           ] as const).map(b => (
             <motion.button key={b.build} whileTap={{ scale: 0.97 }}
               disabled={isStarting} onClick={() => handleStartRun(b.build)}

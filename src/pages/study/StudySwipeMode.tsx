@@ -7,6 +7,39 @@ import type { RunPowerUp, RunItem } from '../../store/useAppStore';
 import { getRealQuestions, shuffleQuestions, REAL_QUESTIONS } from '../../services/questionEngine';
 import '../../pixelart.css';
 
+// ─── Tutorial Hint (non-blocking overlay) ────────────────────────────────────
+function TutorialHint({ text, emoji, visible }: { text: string; emoji: string; visible: boolean }) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 12, scale: 0.94 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10, scale: 0.94 }}
+          transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+          style={{
+            position: 'absolute', bottom: 12, left: 12, right: 12,
+            background: 'rgba(10,15,30,0.96)',
+            border: '1px solid rgba(99,102,241,0.45)',
+            borderRadius: 16, padding: '12px 16px',
+            display: 'flex', alignItems: 'center', gap: 12,
+            zIndex: 250,
+            boxShadow: '0 4px 32px rgba(99,102,241,0.2)',
+            backdropFilter: 'blur(10px)',
+          }}>
+          {/* Pulse dot */}
+          <motion.div
+            animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ repeat: Infinity, duration: 1.2 }}
+            style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366F1', flexShrink: 0 }} />
+          <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>{emoji}</span>
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#E2E8F0', lineHeight: 1.4 }}>{text}</span>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── Modifier label map ───────────────────────────────────────────────────────
 const MOD_LABEL: Record<string, { label: string; icon: string; color: string }> = {
   armored:  { label: 'Blindado',  icon: '🛡️', color: '#60A5FA' },
@@ -713,6 +746,7 @@ export default function StudySwipeMode() {
     runId, currentQuestions,
     setPendingCosmeticChest,
     lastEvolvedItem, confirmEvolution,
+    isTutorial, tutorialStep, advanceTutorial,
   } = useAppStore();
 
   const [qIndex, setQIndex]           = useState(0);
@@ -728,6 +762,18 @@ export default function StudySwipeMode() {
   const [attackIsCrit, setAttackIsCrit]   = useState(false);
   const [questionQueue, setQuestionQueue] = useState<any[]>([]);
   const [aiStatus, setAiStatus]       = useState<'idle' | 'ok' | 'offline'>('idle');
+  const [shownHint, setShownHint]     = useState<number>(-1); // last hint step shown
+
+  // Tutorial hint timing
+  useEffect(() => {
+    if (!isTutorial || tutorialStep <= shownHint) return;
+    setShownHint(tutorialStep);
+    // Auto-advance step 1 and 2 after display time
+    if (tutorialStep === 1 || tutorialStep === 2) {
+      const t = setTimeout(() => advanceTutorial(), 3200);
+      return () => clearTimeout(t);
+    }
+  }, [isTutorial, tutorialStep]);
 
   // Build initial question queue
   useEffect(() => {
@@ -762,6 +808,8 @@ export default function StudySwipeMode() {
   const handleSelect = async (idx: number) => {
     if (selectedIdx !== null || isGameOver || pendingRunUpgrades || !currentQ) return;
     setSelectedIdx(idx);
+    // Tutorial: step 0 → 1 on first answer
+    if (isTutorial && tutorialStep === 0) advanceTutorial();
     incrementQuestions();
     const opt = shuffledOpts[idx];
     const ms = 1000; // simplified
@@ -780,10 +828,12 @@ export default function StudySwipeMode() {
         triggerFlash(isCrit ? '#78350F' : '#162040');
         incrementStreak();
         if (result === 'dead') {
-          collectGold(10 + enemy.level * 3);
+          collectGold(20 + enemy.level * 5);
           addCoins(Math.min(8, 3 + Math.floor(enemy.level / 2)));
           setTimeout(() => { playSound('gold'); playSound('death'); playSound('levelup'); }, 150);
           setCombatLog(`☠️ ${enemy.name} derrotado! +ouro`);
+          // Tutorial: step 2 → 3 on first kill
+          if (isTutorial && tutorialStep >= 1) advanceTutorial();
         } else {
           setCombatLog(isCrit ? `⚡ CRÍTICO! −${actualDmg} HP` : `⚔️ Acertou! −${actualDmg} HP`);
         }
@@ -810,10 +860,12 @@ export default function StudySwipeMode() {
         triggerFlash(isCrit ? '#78350F' : '#162040');
         incrementStreak();
         if (result === 'dead') {
-          collectGold(10 + enemy.level * 3);
+          collectGold(20 + enemy.level * 5);
           addCoins(Math.min(8, 3 + Math.floor(enemy.level / 2)));
           setTimeout(() => { playSound('gold'); playSound('death'); playSound('levelup'); }, 150);
           setCombatLog(`☠️ ${enemy.name} derrotado! +ouro`);
+          // Tutorial: step 2 → 3 on first kill
+          if (isTutorial && tutorialStep >= 1) advanceTutorial();
         } else {
           setCombatLog(isCrit ? `⚡ CRÍTICO! −${actualDmg} HP` : `⚔️ Acertou! −${actualDmg} HP`);
         }
@@ -855,7 +907,7 @@ export default function StudySwipeMode() {
       <AnimatePresence>{flashColor && <ScreenFlash key={flashColor + Date.now()} color={flashColor} />}</AnimatePresence>
 
       {/* Modals */}
-      <AnimatePresence>{pendingRunUpgrades && !pendingItemDrop && <PowerUpModal upgrades={pendingRunUpgrades} onChoose={chooseRunUpgrade} onSkip={skipRunUpgrade} />}</AnimatePresence>
+      <AnimatePresence>{pendingRunUpgrades && !pendingItemDrop && <PowerUpModal upgrades={pendingRunUpgrades} onChoose={(up) => { chooseRunUpgrade(up); /* Tutorial final step */ if (isTutorial && tutorialStep >= 2) { setTimeout(() => advanceTutorial(), 400); } }} onSkip={skipRunUpgrade} />}</AnimatePresence>
       <AnimatePresence>{pendingItemDrop && !lastEvolvedItem && <ItemChestModal onPick={pickItem} onSkip={dismissItemDrop} ownedIds={runItems.map(x => x.id)} runItems={runItems} />}</AnimatePresence>
       <AnimatePresence>{lastEvolvedItem && <EvolutionRevealModal key={lastEvolvedItem} itemId={lastEvolvedItem} onConfirm={confirmEvolution} />}</AnimatePresence>
 
@@ -931,6 +983,30 @@ export default function StudySwipeMode() {
         attackVisible={attackVisible}
         attackIsCrit={attackIsCrit}
       />
+
+      {/* ── Tutorial Hints ── */}
+      <div style={{ position: 'relative' }}>
+        <TutorialHint
+          visible={isTutorial && tutorialStep === 0}
+          emoji="👆"
+          text="Escolha a alternativa correta para atacar o inimigo!"
+        />
+        <TutorialHint
+          visible={isTutorial && tutorialStep === 1}
+          emoji="⚔️"
+          text="Ótimo! Acertando você ataca. Errando, o inimigo contra-ataca."
+        />
+        <TutorialHint
+          visible={isTutorial && tutorialStep === 2}
+          emoji="💀"
+          text="Derrote o inimigo para ganhar Ouro e desbloquear upgrades!"
+        />
+        <TutorialHint
+          visible={isTutorial && tutorialStep === 3}
+          emoji="🎒"
+          text="Escolha um upgrade — eles ficam até você morrer nessa run!"
+        />
+      </div>
 
       {/* ── Question Section ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 24px' }}>
