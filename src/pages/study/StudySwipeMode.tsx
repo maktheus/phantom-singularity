@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Zap, BookOpen, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
-import type { RunPowerUp } from '../../store/useAppStore';
+import type { RunPowerUp, RunItem } from '../../store/useAppStore';
 import { getRealQuestions, shuffleQuestions, REAL_QUESTIONS } from '../../services/questionEngine';
 import '../../pixelart.css';
 
@@ -274,61 +274,342 @@ function PowerUpModal({ upgrades, onChoose, onSkip }: { upgrades: RunPowerUp[]; 
   );
 }
 
-// ─── Item Chest Modal ─────────────────────────────────────────────────────────
-import { ITEM_POOL } from '../../store/useAppStore';
+// ─── Item Chest Modal + Evolution Reveal ─────────────────────────────────────
+import { ITEM_POOL, EVOLUTION_TABLE } from '../../store/useAppStore';
 
-function ItemChestModal({ onPick, onSkip, ownedIds }: { onPick: (id: string) => void; onSkip: () => void; ownedIds: string[] }) {
-  const available = ITEM_POOL
-    .filter(x => !ownedIds.includes(x.id) && x.rarity !== 'legendary')
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3);
+const RCOLOR: Record<string, string> = { common: '#60A5FA', rare: '#A78BFA', legendary: '#FBBF24' };
+const RBG:    Record<string, string> = { common: '#0F2040', rare: '#1E1040', legendary: '#2D1500' };
+const RLABEL: Record<string, string> = { common: 'Comum', rare: 'Raro', legendary: '⭐ LENDÁRIO' };
 
-  const RCOLOR: Record<string, string> = { common: '#60A5FA', rare: '#A78BFA', legendary: '#FBBF24' };
-  const RBG:    Record<string, string> = { common: '#0F2040', rare: '#1E1040', legendary: '#2D1500' };
-  const RLABEL: Record<string, string> = { common: 'Comum', rare: 'Raro', legendary: '⭐ LENDÁRIO' };
+// Checks if adding `item` to current runItems would trigger an evolution
+function wouldEvolve(item: RunItem, runItems: RunItem[]): { evolvedId: string; evolvedItem: RunItem } | null {
+  const hypothetical = [...runItems, { ...item, level: item.category === 'weapon' ? item.maxLevel : 1 }];
+  const weapons = hypothetical.filter(x => x.category === 'weapon' && x.level >= x.maxLevel);
+  const passives = hypothetical.filter(x => x.category === 'passive');
+  for (const w of weapons) {
+    for (const p of passives) {
+      const key = `${w.id}+${p.id}`;
+      if (EVOLUTION_TABLE[key]) {
+        const evolved = ITEM_POOL.find(x => x.id === EVOLUTION_TABLE[key]);
+        if (evolved) return { evolvedId: EVOLUTION_TABLE[key], evolvedItem: evolved };
+      }
+    }
+  }
+  return null;
+}
+
+// Returns a synergy hint string for an item (null if no synergy to show)
+function getSynergyHint(item: RunItem, runItems: RunItem[]): string | null {
+  if (item.category === 'weapon' && item.evolvesIntoWith) {
+    const passive = ITEM_POOL.find(x => x.id === item.evolvesIntoWith);
+    if (passive) return `🔗 Evolui com: ${passive.emoji} ${passive.name}`;
+  }
+  if (item.category === 'passive') {
+    for (const key of Object.keys(EVOLUTION_TABLE)) {
+      const [wId, pId] = key.split('+');
+      if (pId === item.id) {
+        const weapon = ITEM_POOL.find(x => x.id === wId);
+        if (weapon) {
+          const ownedWeapon = runItems.find(r => r.id === wId);
+          return `🔗 Catalisa: ${weapon.emoji} ${weapon.name}${ownedWeapon ? ' ✓' : ''}`;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function ItemChestModal({ onPick, onSkip, ownedIds, runItems }: {
+  onPick: (id: string) => void;
+  onSkip: () => void;
+  ownedIds: string[];
+  runItems: RunItem[];
+}) {
+  // Roll 3 choices once (stable via useState)
+  const [choices] = useState<RunItem[]>(() => {
+    const notOwned = ITEM_POOL.filter(x => x.rarity !== 'legendary' && !ownedIds.includes(x.id));
+    const upgradeable = ITEM_POOL.filter(x => {
+      const inRun = runItems.find(r => r.id === x.id);
+      return inRun && inRun.level < inRun.maxLevel;
+    });
+    const pool = [...notOwned, ...upgradeable].sort(() => Math.random() - 0.5);
+    const unique: RunItem[] = [];
+    const seen = new Set<string>();
+    for (const item of pool) {
+      if (!seen.has(item.id)) { seen.add(item.id); unique.push(item); }
+      if (unique.length === 3) break;
+    }
+    return unique;
+  });
+
+  const anyEvolution = choices.some(c => wouldEvolve(c, runItems));
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex',
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.96)', display: 'flex',
         flexDirection: 'column', justifyContent: 'flex-end', zIndex: 200 }}>
       <motion.div
-        initial={{ y: 400 }} animate={{ y: 0 }} transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-        style={{ padding: '24px 20px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', background: '#0F172A', borderRadius: '24px 24px 0 0', border: '1px solid rgba(255,255,255,0.07)' }}>
+        initial={{ y: 500 }} animate={{ y: 0 }} transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+        style={{ padding: '24px 20px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+          background: '#080D1A', borderRadius: '24px 24px 0 0', border: `1px solid ${anyEvolution ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.07)'}` }}>
+
+        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <motion.div animate={{ rotate: [0,-15,15,-10,10,0], scale: [1,1.1,1] }} transition={{ repeat: Infinity, duration: 2.5 }}>
-            <span style={{ fontSize: '3rem' }}>🎁</span>
-          </motion.div>
-          <h2 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#FBBF24', marginTop: 8 }}>BAÚ DE RECOMPENSA!</h2>
-          <p style={{ color: '#475569', fontWeight: 700, fontSize: '0.82rem', marginTop: 4 }}>Escolha 1 item para a mochila</p>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {available.map(item => (
-            <motion.button key={item.id} whileTap={{ scale: 0.97 }} onClick={() => onPick(item.id)}
+          <motion.span
+            animate={{ rotate: [0, -15, 15, -10, 10, 0], scale: [1, 1.2, 1] }}
+            transition={{ repeat: Infinity, duration: 3 }}
+            style={{ fontSize: '3.5rem', display: 'block', lineHeight: 1, marginBottom: 8 }}>
+            🎁
+          </motion.span>
+          <h2 style={{ fontWeight: 900, fontSize: '1.3rem', color: '#FBBF24', marginBottom: 6 }}>
+            BAÚ DE RECOMPENSA!
+          </h2>
+          {anyEvolution && (
+            <motion.div
+              animate={{ scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }}
+              transition={{ repeat: Infinity, duration: 1.1 }}
               style={{
-                padding: '14px 18px', borderRadius: 16,
-                background: `linear-gradient(135deg, ${RBG[item.rarity]}, #0A0F1E)`,
-                border: `1.5px solid ${RCOLOR[item.rarity]}40`,
-                color: 'white', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 14,
-                boxShadow: `0 4px 20px ${RCOLOR[item.rarity]}15`,
+                display: 'inline-block', padding: '4px 16px', borderRadius: 999, marginBottom: 8,
+                background: 'linear-gradient(90deg, #FBBF24, #F59E0B)',
+                color: '#000', fontWeight: 900, fontSize: '0.78rem',
               }}>
-              <motion.span animate={{ y: [0,-4,0] }} transition={{ repeat: Infinity, duration: 2 }}
-                style={{ fontSize: '2.2rem', flexShrink: 0 }}>{item.emoji}</motion.span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                  <span style={{ fontWeight: 900, fontSize: '0.9rem' }}>{item.name}</span>
-                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: RCOLOR[item.rarity], backgroundColor: `${RCOLOR[item.rarity]}18`, padding: '2px 6px', borderRadius: 999 }}>
-                    {RLABEL[item.rarity]}
-                  </span>
-                </div>
-                <div style={{ color: '#64748B', fontSize: '0.8rem', fontWeight: 600 }}>{item.desc(1)}</div>
-              </div>
-            </motion.button>
-          ))}
+              ⚡ EVOLUÇÃO DISPONÍVEL!
+            </motion.div>
+          )}
+          <p style={{ color: '#475569', fontWeight: 700, fontSize: '0.82rem' }}>
+            Escolha 1 item para a mochila
+          </p>
         </div>
-        <button onClick={onSkip} style={{ marginTop: 14, width: '100%', padding: '12px', color: '#334155', fontWeight: 800, fontSize: '0.85rem' }}>
+
+        {/* 3 choices */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {choices.map((item, i) => {
+            const evo = wouldEvolve(item, runItems);
+            const synergy = getSynergyHint(item, runItems);
+            const isUpgrade = ownedIds.includes(item.id);
+            const ownedItem = runItems.find(r => r.id === item.id);
+            const color = evo ? '#FBBF24' : RCOLOR[item.rarity];
+            const bg    = evo ? '#2D1500' : RBG[item.rarity];
+
+            return (
+              <motion.button key={item.id}
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.08, type: 'spring', stiffness: 340, damping: 28 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => onPick(item.id)}
+                style={{
+                  padding: '14px 16px', borderRadius: 16,
+                  background: evo
+                    ? 'linear-gradient(135deg, #2D1500, #180C00)'
+                    : `linear-gradient(135deg, ${bg}, #0A0F1E)`,
+                  border: `2px solid ${evo ? '#FBBF24' : `${color}50`}`,
+                  color: 'white', textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  boxShadow: evo ? '0 0 24px rgba(251,191,36,0.25)' : `0 4px 20px ${color}12`,
+                  position: 'relative', overflow: 'hidden',
+                }}>
+                {/* Shimmer on evolution items */}
+                {evo && (
+                  <motion.div
+                    animate={{ x: ['-100%', '220%'] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                    style={{
+                      position: 'absolute', top: 0, bottom: 0, width: '40%',
+                      background: 'linear-gradient(90deg, transparent, rgba(251,191,36,0.18), transparent)',
+                      pointerEvents: 'none',
+                    }} />
+                )}
+
+                {/* Emoji */}
+                <motion.span
+                  animate={evo
+                    ? { scale: [1, 1.2, 1], rotate: [0, -8, 8, 0] }
+                    : { y: [0, -4, 0] }}
+                  transition={{ repeat: Infinity, duration: evo ? 1.6 : 2.5 }}
+                  style={{ fontSize: '2.4rem', flexShrink: 0, lineHeight: 1 }}>
+                  {item.emoji}
+                </motion.span>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Name + badge */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 900, fontSize: '0.93rem' }}>{item.name}</span>
+                    {evo ? (
+                      <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#000',
+                        background: '#FBBF24', padding: '2px 8px', borderRadius: 999 }}>
+                        ⚡ EVOLUI!
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '0.6rem', fontWeight: 800, color,
+                        background: `${color}18`, padding: '2px 6px', borderRadius: 999 }}>
+                        {isUpgrade ? '▲ LEVEL UP' : RLABEL[item.rarity]}
+                      </span>
+                    )}
+                  </div>
+                  {/* Description */}
+                  <div style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600,
+                    marginBottom: (evo || synergy) ? 5 : 0 }}>
+                    {isUpgrade && ownedItem
+                      ? `Lv.${ownedItem.level}→${ownedItem.level + 1}: ${item.desc(ownedItem.level + 1)}`
+                      : item.desc(1)}
+                  </div>
+                  {/* Synergy / evolution result */}
+                  {evo ? (
+                    <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#FBBF24',
+                      display: 'flex', alignItems: 'center', gap: 4 }}>
+                      ⭐ Vira: {evo.evolvedItem.emoji} {evo.evolvedItem.name}
+                    </div>
+                  ) : synergy ? (
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569' }}>
+                      {synergy}
+                    </div>
+                  ) : null}
+                </div>
+
+                <span style={{ fontSize: '1.4rem', color: `${color}80`, flexShrink: 0 }}>›</span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        <button onClick={onSkip}
+          style={{ marginTop: 14, width: '100%', padding: '12px', color: '#334155', fontWeight: 800, fontSize: '0.85rem' }}>
           Pular →
         </button>
       </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── Evolution Reveal Modal ───────────────────────────────────────────────────
+function EvolutionRevealModal({ itemId, onConfirm }: { itemId: string; onConfirm: () => void }) {
+  const item = ITEM_POOL.find(x => x.id === itemId);
+  if (!item) return null;
+
+  // Find which weapon + passive produced this evolution
+  const fromEntry = Object.entries(EVOLUTION_TABLE).find(([, v]) => v === itemId);
+  let fromWeapon: RunItem | null = null;
+  let fromPassive: RunItem | null = null;
+  if (fromEntry) {
+    const [wId, pId] = fromEntry[0].split('+');
+    fromWeapon = ITEM_POOL.find(x => x.id === wId) ?? null;
+    fromPassive = ITEM_POOL.find(x => x.id === pId) ?? null;
+  }
+
+  const STARS = [...Array(14)].map((_, i) => ({
+    angle: i * (360 / 14),
+    delay: 0.4 + i * 0.04,
+    radius: 100 + Math.random() * 60,
+  }));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 300,
+        background: 'radial-gradient(ellipse at center, #1A0A00 0%, #080410 60%, #000 100%)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', padding: '32px 24px',
+        overflow: 'hidden',
+      }}>
+
+      {/* Particle ring */}
+      {STARS.map((s, i) => (
+        <motion.div key={i}
+          initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+          animate={{
+            opacity: [0, 1, 0],
+            scale: [0, 1.4, 0],
+            x: Math.cos(s.angle * Math.PI / 180) * s.radius,
+            y: Math.sin(s.angle * Math.PI / 180) * s.radius,
+          }}
+          transition={{ delay: s.delay, duration: 1.4, repeat: Infinity, repeatDelay: 1.2 }}
+          style={{ position: 'absolute', fontSize: '1.1rem', color: '#FBBF24', pointerEvents: 'none' }}>
+          ✦
+        </motion.div>
+      ))}
+
+      {/* "EVOLUÇÃO!" label */}
+      <motion.div
+        initial={{ y: -24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.15, type: 'spring', stiffness: 300, damping: 22 }}
+        style={{ marginBottom: 16 }}>
+        <span style={{
+          fontSize: '0.8rem', fontWeight: 900, color: '#FBBF24',
+          letterSpacing: 6, textTransform: 'uppercase',
+          textShadow: '0 0 20px rgba(251,191,36,0.8)',
+        }}>⭐ EVOLUÇÃO!</span>
+      </motion.div>
+
+      {/* Big evolved item emoji */}
+      <motion.div
+        initial={{ scale: 0, rotate: -30 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ delay: 0.35, type: 'spring', stiffness: 200, damping: 14 }}
+        style={{ marginBottom: 20 }}>
+        <motion.span
+          animate={{
+            scale: [1, 1.08, 1],
+            filter: ['drop-shadow(0 0 20px rgba(251,191,36,0.6))', 'drop-shadow(0 0 50px rgba(251,191,36,1))', 'drop-shadow(0 0 20px rgba(251,191,36,0.6))'],
+          }}
+          transition={{ repeat: Infinity, duration: 2.2 }}
+          style={{ fontSize: '7rem', lineHeight: 1, display: 'block' }}>
+          {item.emoji}
+        </motion.span>
+      </motion.div>
+
+      {/* Item name + description */}
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.55, type: 'spring' }}
+        style={{ marginBottom: 20 }}>
+        <div style={{ fontWeight: 900, fontSize: '1.5rem', color: '#FBBF24',
+          marginBottom: 8, textShadow: '0 2px 12px rgba(251,191,36,0.5)' }}>
+          {item.name}
+        </div>
+        <div style={{ color: '#FDE68A', fontWeight: 700, fontSize: '0.9rem', lineHeight: 1.5 }}>
+          {item.desc(1)}
+        </div>
+      </motion.div>
+
+      {/* From: weapon + passive → evolved */}
+      {fromWeapon && fromPassive && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.75 }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36,
+            background: 'rgba(255,255,255,0.06)', padding: '12px 20px', borderRadius: 16,
+            border: '1px solid rgba(251,191,36,0.2)',
+          }}>
+          <span style={{ fontSize: '2rem' }}>{fromWeapon.emoji}</span>
+          <span style={{ color: '#475569', fontWeight: 900, fontSize: '1.1rem' }}>+</span>
+          <span style={{ fontSize: '2rem' }}>{fromPassive.emoji}</span>
+          <span style={{ color: '#475569', fontWeight: 900, fontSize: '1.1rem' }}>→</span>
+          <span style={{ fontSize: '2rem' }}>{item.emoji}</span>
+        </motion.div>
+      )}
+
+      {/* Confirm button */}
+      <motion.button
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 1.0 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={onConfirm}
+        style={{
+          padding: '18px 40px', borderRadius: 16, fontWeight: 900, fontSize: '1.1rem',
+          background: 'linear-gradient(135deg, #FBBF24, #D97706)',
+          color: '#000', boxShadow: '0 5px 0 #92400E', cursor: 'pointer',
+        }}>
+        ✦ Incrível! Continuar
+      </motion.button>
     </motion.div>
   );
 }
@@ -344,6 +625,7 @@ export default function StudySwipeMode() {
     runItems, selectedConcurso: storeConcurso,
     runId, currentQuestions,
     setPendingCosmeticChest,
+    lastEvolvedItem, confirmEvolution,
   } = useAppStore();
 
   const [qIndex, setQIndex]           = useState(0);
@@ -487,7 +769,8 @@ export default function StudySwipeMode() {
 
       {/* Modals */}
       <AnimatePresence>{pendingRunUpgrades && !pendingItemDrop && <PowerUpModal upgrades={pendingRunUpgrades} onChoose={chooseRunUpgrade} onSkip={skipRunUpgrade} />}</AnimatePresence>
-      <AnimatePresence>{pendingItemDrop && <ItemChestModal onPick={pickItem} onSkip={dismissItemDrop} ownedIds={runItems.map(x => x.id)} />}</AnimatePresence>
+      <AnimatePresence>{pendingItemDrop && !lastEvolvedItem && <ItemChestModal onPick={pickItem} onSkip={dismissItemDrop} ownedIds={runItems.map(x => x.id)} runItems={runItems} />}</AnimatePresence>
+      <AnimatePresence>{lastEvolvedItem && <EvolutionRevealModal key={lastEvolvedItem} itemId={lastEvolvedItem} onConfirm={confirmEvolution} />}</AnimatePresence>
 
       {/* ── Top Bar ── */}
       <div style={{

@@ -168,6 +168,7 @@ interface GameState {
   // VS-style items
   runItems: RunItem[];     // items acquired this run
   pendingItemDrop: boolean; // show item chest modal
+  lastEvolvedItem: string | null; // id of last evolved item, for reveal animation
 
   // Backend sync
   runId: string | null;
@@ -203,6 +204,7 @@ interface GameState {
   pickItem: (itemId: string) => void;
   levelUpItem: (itemId: string) => boolean;
   dismissItemDrop: () => void;
+  confirmEvolution: () => void;
   respawn: () => void;
   incrementStreak: () => void;
   resetStreak: () => void;
@@ -339,6 +341,7 @@ export const useAppStore = create<GameState>()(
       hasOnboarded: false,
       runItems: [],
       pendingItemDrop: false,
+      lastEvolvedItem: null,
       runId: null,
       currentQuestions: [],
       theme: 'dark' as 'dark' | 'light',
@@ -380,7 +383,8 @@ export const useAppStore = create<GameState>()(
               runKills: 0,
               pendingRunUpgrades: null,
               runItems: [],
-              pendingItemDrop: false
+              pendingItemDrop: false,
+              lastEvolvedItem: null,
             });
             return;
           } catch (e) {
@@ -408,7 +412,7 @@ export const useAppStore = create<GameState>()(
           return p;
         })();
 
-        set({ player: withCosmetics, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false, runId: null, currentQuestions: [] });
+        set({ player: withCosmetics, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false, lastEvolvedItem: null, runId: null, currentQuestions: [] });
       },
 
       attackEnemy: async (questionId, chosenIndex, ms) => {
@@ -570,7 +574,7 @@ export const useAppStore = create<GameState>()(
           newPlayer = evoTemplate.apply(newPlayer, 1);
         }
 
-        set({ runItems: finalItems, player: newPlayer, pendingItemDrop: false });
+        set({ runItems: finalItems, player: newPlayer, pendingItemDrop: false, lastEvolvedItem: evo ? evo.evolution : null });
       },
 
       levelUpItem: (itemId) => {
@@ -594,11 +598,12 @@ export const useAppStore = create<GameState>()(
           finalPlayer = evoTemplate.apply(finalPlayer, 1);
         }
 
-        set({ runItems: finalItems, player: finalPlayer });
+        set({ runItems: finalItems, player: finalPlayer, lastEvolvedItem: evo ? evo.evolution : null });
         return true;
       },
 
       dismissItemDrop: () => set({ pendingItemDrop: false }),
+      confirmEvolution: () => set({ lastEvolvedItem: null }),
 
       respawn: () => {
         const { permanentUpgrades, player, cosmeticInventory, equippedCosmetics } = get();
@@ -618,7 +623,7 @@ export const useAppStore = create<GameState>()(
           }
           return p;
         })();
-        set({ player: withCosmetics, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false });
+        set({ player: withCosmetics, enemy: buildEnemy(1), isGameOver: false, streak: 0, runKills: 0, pendingRunUpgrades: null, runItems: [], pendingItemDrop: false, lastEvolvedItem: null });
       },
 
       incrementStreak: () => set(s => ({ streak: s.streak + 1 })),
