@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Zap, BookOpen, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
-import type { RunPowerUp, RunItem } from '../../store/useAppStore';
+import type { RunPowerUp, RunItem, BuildType } from '../../store/useAppStore';
 import { getRealQuestions, shuffleQuestions, REAL_QUESTIONS } from '../../services/questionEngine';
 import '../../pixelart.css';
 

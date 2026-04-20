@@ -511,7 +511,7 @@ export const useAppStore = create<GameState>()(
         return { result: 'alive', isCrit: false, actualDmg: 0, correct: false, tip: '' };
       },
 
-      localAttack: (isCorrect, optionTip) => {
+      localAttack: (isCorrect, _optionTip) => {
         const { player, enemy } = get();
         if (isCorrect) {
           const rolled = Math.random() < player.critChance;
