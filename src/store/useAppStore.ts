@@ -180,6 +180,13 @@ interface GameState {
   equippedCosmetics: { hat: string|null; weapon: string|null; armor: string|null; amulet: string|null };
   pendingCosmeticChest: boolean;
 
+  // ─── Freemium + Daily tracking ────────────────────────────────────────────
+  isPremium: boolean;
+  dailyPlaysUsed: number;
+  dailyStreak: number;
+  lastPlayDate: string;        // 'YYYY-MM-DD' — last day a run was started
+  todayStats: { questions: number; kills: number; goldEarned: number; runsCompleted: number };
+
   // Actions
   setHasOnboarded: () => void;
   startRun: (build: BuildType, concursoId?: string) => Promise<void>;
@@ -206,6 +213,10 @@ interface GameState {
   equipCosmetic: (itemId: string) => void;
   unequipCosmetic: (slot: CosmeticSlot) => void;
   setPendingCosmeticChest: (v: boolean) => void;
+  /** Returns false if free daily limit reached */
+  recordDailyPlay: () => boolean;
+  setPremium: (v: boolean) => void;
+  addTodayStats: (s: Partial<{ questions: number; kills: number; goldEarned: number; runsCompleted: number }>) => void;
 }
 
 // ─── Enemy Roster ─────────────────────────────────────────────────────────────
@@ -334,6 +345,11 @@ export const useAppStore = create<GameState>()(
       cosmeticInventory: [],
       equippedCosmetics: { hat: null, weapon: null, armor: null, amulet: null },
       pendingCosmeticChest: false,
+      isPremium: false,
+      dailyPlaysUsed: 0,
+      dailyStreak: 0,
+      lastPlayDate: '',
+      todayStats: { questions: 0, kills: 0, goldEarned: 0, runsCompleted: 0 },
 
       setHasOnboarded: () => set({ hasOnboarded: true }),
 
@@ -494,6 +510,7 @@ export const useAppStore = create<GameState>()(
         const pending = rollPowerUps();
         const dropItem = isBoss || newKills % 3 === 0;
 
+        const ts = get().todayStats;
         set({
           enemy: buildEnemy(enemy.level + 1),
           runKills: newKills,
@@ -501,14 +518,15 @@ export const useAppStore = create<GameState>()(
           pendingRunUpgrades: pending,
           pendingItemDrop: dropItem,
           player: newPlayer,
+          todayStats: { ...ts, kills: ts.kills + 1 },
         });
       },
 
       collectGold: (base) => {
-        const { gold, player, enemy } = get();
+        const { gold, player, enemy, todayStats } = get();
         const isBoss = enemy.modifier === 'boss';
         const amount = Math.floor(base * player.goldMultiplier * (1 + enemy.level * 0.1) * (isBoss ? 3 : 1));
-        set({ gold: gold + amount });
+        set({ gold: gold + amount, todayStats: { ...todayStats, goldEarned: todayStats.goldEarned + amount } });
       },
 
       purchasePermanent: (id) => {
@@ -605,8 +623,40 @@ export const useAppStore = create<GameState>()(
 
       incrementStreak: () => set(s => ({ streak: s.streak + 1 })),
       resetStreak: () => set({ streak: 0 }),
-      incrementQuestions: () => set(s => ({ totalQuestionsAnswered: s.totalQuestionsAnswered + 1 })),
+      incrementQuestions: () => set(s => ({
+        totalQuestionsAnswered: s.totalQuestionsAnswered + 1,
+        todayStats: { ...s.todayStats, questions: s.todayStats.questions + 1 },
+      })),
       setConcurso: (c) => set({ selectedConcurso: c }),
+
+      recordDailyPlay: () => {
+        const { isPremium, dailyPlaysUsed, dailyStreak, lastPlayDate } = get();
+        const FREE_LIMIT = 3;
+        const today = new Date().toISOString().slice(0, 10);
+        const isNewDay = lastPlayDate !== today;
+
+        if (!isNewDay && !isPremium && dailyPlaysUsed >= FREE_LIMIT) return false;
+
+        // Streak logic
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        const newStreak = isNewDay
+          ? (lastPlayDate === yesterday ? dailyStreak + 1 : 1)
+          : dailyStreak;
+
+        set({
+          dailyPlaysUsed: isNewDay ? 1 : dailyPlaysUsed + 1,
+          dailyStreak: newStreak,
+          lastPlayDate: today,
+          todayStats: isNewDay
+            ? { questions: 0, kills: 0, goldEarned: 0, runsCompleted: 0 }
+            : get().todayStats,
+        });
+        return true;
+      },
+
+      setPremium: (v) => set({ isPremium: v }),
+
+      addTodayStats: (s) => set(state => ({ todayStats: { ...state.todayStats, ...Object.fromEntries(Object.entries(s).map(([k, v]) => [k, (state.todayStats as any)[k] + (v ?? 0)])) } })),
 
       toggleTheme: () => set(s => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
 
