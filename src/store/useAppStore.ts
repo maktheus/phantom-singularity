@@ -117,6 +117,7 @@ export interface PlayerStats {
   critChance: number;
   goldMultiplier: number;
   build: BuildType;
+  healOnHit?: number;   // HP healed on every correct answer (vampirism etc.)
 }
 
 export interface EnemyState {
@@ -145,6 +146,7 @@ export interface RunPowerUp {
   desc: string;
   emoji: string;
   rarity: ItemRarity;
+  forClass?: BuildType;  // if set, only offered to that class
   apply: (p: PlayerStats) => PlayerStats;
 }
 
@@ -293,32 +295,65 @@ function applyPermanents(base: PlayerStats, ups: PermanentUpgrade[]): PlayerStat
 }
 
 // ─── Run Power-ups (mid-battle random bonus picks) ────────────────────────────
+// ─── Generic power-ups ────────────────────────────────────────────────────────
 const RUN_POWERUPS: RunPowerUp[] = [
+  // ── Generic (offered to all classes) ──
   { id: 'r1',  rarity: 'common',    emoji: '🗡️', name: 'Fio da Navalha',   desc: '+18 Dano nesta run',              apply: p => ({ ...p, damage: p.damage + 18 }) },
   { id: 'r2',  rarity: 'common',    emoji: '❤️', name: 'Bandagem',          desc: 'Recupera 50 HP',                   apply: p => ({ ...p, hp: Math.min(p.hp + 50, p.maxHp) }) },
   { id: 'r3',  rarity: 'common',    emoji: '💛', name: 'Adrenalina',        desc: '+35 HP Máximo',                    apply: p => ({ ...p, maxHp: p.maxHp + 35, hp: p.hp + 35 }) },
   { id: 'r4',  rarity: 'rare',      emoji: '🎯', name: 'Mira Precisa',      desc: '+20% Chance de Crítico',           apply: p => ({ ...p, critChance: Math.min(0.75, p.critChance + 0.20) }) },
   { id: 'r5',  rarity: 'rare',      emoji: '🪙', name: 'Ganância',          desc: '+120% Ouro por kill',              apply: p => ({ ...p, goldMultiplier: p.goldMultiplier + 1.2 }) },
-  { id: 'r6',  rarity: 'rare',      emoji: '🔥', name: 'Aura de Chamas',    desc: '+35 Dano, -20 HP Máx',            apply: p => ({ ...p, damage: p.damage + 35, maxHp: Math.max(20, p.maxHp - 20) }) },
+  { id: 'r6',  rarity: 'rare',      emoji: '🔥', name: 'Aura de Chamas',    desc: '+35 Dano · -20 HP Máx',           apply: p => ({ ...p, damage: p.damage + 35, maxHp: Math.max(20, p.maxHp - 20) }) },
   { id: 'r7',  rarity: 'legendary', emoji: '⚡', name: 'MODO BERSERK',      desc: 'Dano ×2.5 · Crítico 60%',         apply: p => ({ ...p, damage: Math.floor(p.damage * 2.5), critChance: 0.60 }) },
   { id: 'r8',  rarity: 'legendary', emoji: '🌀', name: 'Alquimia Total',    desc: 'Vida ↔ Dano invertidos',           apply: p => ({ ...p, damage: p.maxHp, maxHp: p.damage, hp: Math.min(p.hp, p.damage) }) },
-  { id: 'r9',  rarity: 'rare',      emoji: '🎲', name: 'Dado do Caos',      desc: 'Dano aleatório: 1–90',             apply: p => ({ ...p, damage: Math.floor(Math.random() * 90) + 1 }) },
-  { id: 'r10', rarity: 'legendary', emoji: '🧛', name: 'VAMPIRISMO',        desc: 'Cada acerto cura 12 HP',           apply: p => ({ ...p, damage: p.damage }) }, // flag — handled in combat
-  { id: 'r11', rarity: 'rare',      emoji: '💀', name: 'Pacto Sombrio',     desc: '-30 HP Máx · Dano +50',           apply: p => ({ ...p, damage: p.damage + 50, maxHp: Math.max(20, p.maxHp - 30), hp: Math.min(p.hp, p.maxHp - 30) }) },
-  { id: 'r12', rarity: 'common',    emoji: '🧪', name: 'Elixir de Força',   desc: '+12 Dano · +12 HP Máx',           apply: p => ({ ...p, damage: p.damage + 12, maxHp: p.maxHp + 12, hp: p.hp + 12 }) },
+  { id: 'r9',  rarity: 'rare',      emoji: '🎲', name: 'Dado do Caos',      desc: 'Dano aleatório: 10–100',          apply: p => ({ ...p, damage: Math.floor(Math.random() * 90) + 10 }) },
+  { id: 'r10', rarity: 'legendary', emoji: '🧛', name: 'VAMPIRISMO',        desc: 'Cada acerto cura 15 HP',          apply: p => ({ ...p, healOnHit: (p.healOnHit ?? 0) + 15 }) },
+  { id: 'r11', rarity: 'rare',      emoji: '💀', name: 'Pacto Sombrio',     desc: '-30 HP Máx · +55 Dano',          apply: p => ({ ...p, damage: p.damage + 55, maxHp: Math.max(20, p.maxHp - 30), hp: Math.min(p.hp, Math.max(20, p.maxHp - 30)) }) },
+  { id: 'r12', rarity: 'common',    emoji: '🧪', name: 'Elixir de Força',   desc: '+14 Dano · +14 HP Máx',          apply: p => ({ ...p, damage: p.damage + 14, maxHp: p.maxHp + 14, hp: p.hp + 14 }) },
+  // ── Warrior exclusives ──
+  { id: 'cw1', forClass: 'warrior', rarity: 'rare',      emoji: '🛡️', name: 'Bastião de Ferro',    desc: '+80 HP Máx · sobrevive muito mais',       apply: p => ({ ...p, maxHp: p.maxHp + 80, hp: p.hp + 80 }) },
+  { id: 'cw2', forClass: 'warrior', rarity: 'legendary', emoji: '🏔️', name: 'IRA DO GUERREIRO',  desc: '+60 Dano · cura 20 HP por acerto',        apply: p => ({ ...p, damage: p.damage + 60, healOnHit: (p.healOnHit ?? 0) + 20 }) },
+  // ── Mage exclusives ──
+  { id: 'cm1', forClass: 'mage',    rarity: 'rare',      emoji: '🔭', name: 'Amplificador Arcano', desc: '+45 Dano · +18% Crítico',                 apply: p => ({ ...p, damage: p.damage + 45, critChance: Math.min(0.80, p.critChance + 0.18) }) },
+  { id: 'cm2', forClass: 'mage',    rarity: 'legendary', emoji: '💫', name: 'SINGULARIDADE',       desc: 'Dano ×2.2 — destruição total',            apply: p => ({ ...p, damage: Math.floor(p.damage * 2.2) }) },
+  // ── Rogue exclusives ──
+  { id: 'cr1', forClass: 'rogue',   rarity: 'rare',      emoji: '🌑', name: 'Punhal Duplo',        desc: '+25% Crítico · +1.5× Ouro',               apply: p => ({ ...p, critChance: Math.min(0.80, p.critChance + 0.25), goldMultiplier: p.goldMultiplier + 1.5 }) },
+  { id: 'cr2', forClass: 'rogue',   rarity: 'legendary', emoji: '🗡️', name: 'INSTINTO MORTAL',    desc: '+40% Crit · +2.5× Ouro · +20 Dano',      apply: p => ({ ...p, critChance: Math.min(0.85, p.critChance + 0.40), goldMultiplier: p.goldMultiplier + 2.5, damage: p.damage + 20 }) },
 ];
 
-function rollPowerUps(): RunPowerUp[] {
-  const weighted = RUN_POWERUPS.flatMap(p =>
+// Lucky roll: 20% chance to offer 4 options (VS-style "chest lottery" dopamine spike)
+// Class-exclusive option always included when available
+function rollPowerUps(build: BuildType): RunPowerUp[] {
+  const classPool   = RUN_POWERUPS.filter(p => p.forClass === build);
+  const genericPool = RUN_POWERUPS.filter(p => !p.forClass);
+
+  // Pick one class-exclusive power-up if available
+  const classOption = classPool.length > 0
+    ? classPool[Math.floor(Math.random() * classPool.length)]
+    : null;
+
+  // Lucky: 20% chance for 4 choices instead of 3 (huge dopamine moment)
+  const isLucky = Math.random() < 0.20;
+  const totalSlots   = isLucky ? 4 : 3;
+  const genericSlots = classOption ? totalSlots - 1 : totalSlots;
+
+  const weighted = genericPool.flatMap(p =>
     p.rarity === 'legendary' ? [p] : p.rarity === 'rare' ? [p, p] : [p, p, p]
   ).sort(() => Math.random() - 0.5);
+
   const unique: RunPowerUp[] = [];
-  const seen = new Set<string>();
+  const seen = new Set<string>(classOption ? [classOption.id] : []);
   for (const p of weighted) {
     if (!seen.has(p.id)) { seen.add(p.id); unique.push(p); }
-    if (unique.length === 3) break;
+    if (unique.length >= genericSlots) break;
   }
-  return unique;
+
+  // Shuffle class option into a random position
+  const result = classOption
+    ? [...unique, classOption].sort(() => Math.random() - 0.5)
+    : unique;
+
+  return result;
 }
 
 // Roll 3 random items from pool (not already owned)
@@ -480,38 +515,42 @@ export const useAppStore = create<GameState>()(
         const { player, enemy } = get();
         if (isCorrect) {
           const rolled = Math.random() < player.critChance;
-          // 2.5× crit multiplier — crits feel MASSIVE
-          const baseDmg = Math.max(1, Math.floor(player.damage * (rolled ? 2.5 : 1)));
-          // Armor reduces damage (armored modifier)
+          // Mage fantasy: 3× crits (others: 2.5×) — mage crits are DEVASTATING one-shots
+          const critMult = player.build === 'mage' ? 3.0 : 2.5;
+          const baseDmg = Math.max(1, Math.floor(player.damage * (rolled ? critMult : 1)));
+          // Armored: reduce by armor value
           const effectiveDmg = enemy.modifier === 'armored'
             ? Math.max(1, baseDmg - enemy.armor)
             : baseDmg;
           const newEnemyHp = Math.max(0, enemy.hp - effectiveDmg);
 
-          // Vampirism power-up (r10): heal on correct answer — check via damage being same
-          // We track it via a sentinal: the run item "vampirism" flag is r10 in runItems name
-          // Simple approach: check if any runItem has id starting with "r10" — actually we store
-          // power-ups applied to player stats, so vampirism is flagged by checking pendingRunUpgrades
-          // The cleanest way: check runItems for vampirism tag — but powerups are applied to player
-          // For now heal 12 HP if player has vampirism (detected via specific damage range not useful)
-          // Best: add a vampireActive flag. Simpler: just heal on every crit if crit > 50%
-          let newPlayerHp = player.hp;
-          // Regen from vampirism (r10 is applied but has no stat change — flag via checking if player has some marker)
-          // Simple: always try to heal if critChance >= 0.55 (berserk or vampirism applied)
-          // Actually cleanest: heal 12 if player damage hasn't changed from r10 apply + some marker
-          // SIMPLEST that works well: just heal a small amount on every correct answer scaled by critChance
-          // This naturally rewards high-crit builds (rogue/berserk) without tracking r10 explicitly
-          set({ enemy: { ...enemy, hp: newEnemyHp }, player: { ...player, hp: Math.min(player.maxHp, newPlayerHp) } });
+          // Vampirism / healOnHit: restore HP on every correct answer
+          const healing = player.healOnHit ?? 0;
+          const newPlayerHp = healing > 0
+            ? Math.min(player.maxHp, player.hp + healing)
+            : player.hp;
+
+          set({ enemy: { ...enemy, hp: newEnemyHp }, player: { ...player, hp: newPlayerHp } });
           return { result: newEnemyHp === 0 ? 'dead' as const : 'alive' as const, isCrit: rolled, actualDmg: effectiveDmg, correct: true };
         } else {
-          // Enemy counterattack — more threatening, scales faster
-          const baseEnemyDmg = Math.max(8, Math.floor(10 + enemy.level * 2.5));
-          // Enraged enemies deal 1.5× on wrong answers
-          const enemyDmg = enemy.modifier === 'enraged'
-            ? Math.floor(baseEnemyDmg * 1.5)
-            : baseEnemyDmg;
-          // Regen enemies recover HP on each wrong answer
-          const regenHp = enemy.modifier === 'regen' ? Math.min(enemy.maxHp, enemy.hp + 5) : enemy.hp;
+          // ── Enemy counter-attack: piecewise curve — gentle early, steep late ──
+          // L1:3 · L2:6 · L3:9 · L4:14 · L5:19 · L6:24 · L7:29 · L8:34 · L10:44
+          const rawDmg = enemy.level <= 3
+            ? enemy.level * 3
+            : Math.floor(9 + (enemy.level - 3) * 5);
+
+          // Enraged modifier: 1.5× counter-attack — very punishing
+          const enragedMult = enemy.modifier === 'enraged' ? 1.5 : 1;
+          // Warrior: 20% damage reduction (tank fantasy — survives mistakes)
+          const warriorMult = player.build === 'warrior' ? 0.80 : 1.0;
+
+          const enemyDmg = Math.max(2, Math.floor(rawDmg * enragedMult * warriorMult));
+
+          // Regen enemy heals 6 HP on each wrong answer
+          const regenHp = enemy.modifier === 'regen'
+            ? Math.min(enemy.maxHp, enemy.hp + 6)
+            : enemy.hp;
+
           const newPlayerHp = Math.max(0, player.hp - enemyDmg);
           if (newPlayerHp <= 0) {
             set({ player: { ...player, hp: 0 }, enemy: { ...enemy, hp: regenHp }, isGameOver: true });
@@ -556,7 +595,12 @@ export const useAppStore = create<GameState>()(
 
         // Boss / every 2nd kill: item chest; otherwise power-up choices — constant reward loop
         const dropItem = isBoss || newKills % 2 === 0;
-        const pending  = dropItem ? null : rollPowerUps(); // item chest replaces power-ups
+        const pending  = dropItem ? null : rollPowerUps(player.build);
+
+        // Rogue: stacks +2% crit per kill (VS-style power scaling feel)
+        if (player.build === 'rogue') {
+          newPlayer = { ...newPlayer, critChance: Math.min(0.80, newPlayer.critChance + 0.02) };
+        }
 
         const ts = get().todayStats;
         set({

@@ -261,45 +261,97 @@ const RARITY_COLORS = { common: '#60A5FA', rare: '#A78BFA', legendary: '#FBBF24'
 const RARITY_BG     = { common: '#0F2040', rare: '#1E1040', legendary: '#2D1500' };
 const RARITY_LABEL  = { common: 'Comum', rare: 'Raro', legendary: '⭐ LENDÁRIO' };
 
-function PowerUpModal({ upgrades, onChoose, onSkip }: { upgrades: RunPowerUp[]; onChoose: (u: RunPowerUp) => void; onSkip: () => void }) {
+function PowerUpModal({ upgrades, playerBuild, onChoose, onSkip }: {
+  upgrades: RunPowerUp[];
+  playerBuild: BuildType;
+  onChoose: (u: RunPowerUp) => void;
+  onSkip: () => void;
+}) {
+  const isLucky = upgrades.length >= 4; // 4 choices = lucky roll
+
+  const buildColor = playerBuild === 'warrior' ? '#EF4444' : playerBuild === 'mage' ? '#8B5CF6' : '#22C55E';
+  const buildName  = playerBuild === 'warrior' ? 'Guerreiro' : playerBuild === 'mage' ? 'Mago' : 'Ladino';
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex',
         flexDirection: 'column', justifyContent: 'flex-end', zIndex: 200 }}>
       <motion.div
         initial={{ y: 400 }} animate={{ y: 0 }} transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-        style={{ padding: '24px 20px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', background: '#0F172A', borderRadius: '24px 24px 0 0', border: '1px solid rgba(255,255,255,0.07)' }}>
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <motion.div animate={{ rotate: [0,-10,10,0] }} transition={{ repeat: Infinity, duration: 2 }}>
-            <span style={{ fontSize: '3rem' }}>🎁</span>
+        style={{
+          padding: '20px 20px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
+          background: '#0F172A', borderRadius: '24px 24px 0 0',
+          border: `1px solid ${isLucky ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.07)'}`,
+          boxShadow: isLucky ? '0 -8px 40px rgba(251,191,36,0.15)' : 'none',
+        }}>
+
+        {/* Lucky roll banner */}
+        {isLucky && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            style={{
+              textAlign: 'center', marginBottom: 10,
+              background: 'linear-gradient(90deg, #78350F, #92400E, #78350F)',
+              borderRadius: 12, padding: '7px 14px',
+              border: '1px solid #FBBF24',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+            <motion.span animate={{ rotate: [0,15,-15,0] }} transition={{ repeat: Infinity, duration: 0.8 }}>🎰</motion.span>
+            <span style={{ fontWeight: 900, fontSize: '0.78rem', color: '#FBBF24', letterSpacing: 1 }}>SORTE RARA — 4 OPÇÕES!</span>
+            <motion.span animate={{ rotate: [0,-15,15,0] }} transition={{ repeat: Infinity, duration: 0.8 }}>🎰</motion.span>
           </motion.div>
-          <h2 style={{ fontWeight: 900, fontSize: '1.2rem', marginTop: 8 }}>INIMIGO DERROTADO!</h2>
-          <p style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginTop: 4 }}>Escolha 1 poder para esta run</p>
+        )}
+
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+          <motion.div animate={{ rotate: [0,-10,10,0] }} transition={{ repeat: Infinity, duration: 2 }}>
+            <span style={{ fontSize: isLucky ? '2.5rem' : '2rem' }}>{isLucky ? '🎁✨' : '🎁'}</span>
+          </motion.div>
+          <h2 style={{ fontWeight: 900, fontSize: '1.1rem', marginTop: 6 }}>INIMIGO DERROTADO!</h2>
+          <p style={{ color: '#475569', fontWeight: 700, fontSize: '0.8rem', marginTop: 3 }}>Escolha 1 poder para esta run</p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {upgrades.map(u => (
-            <motion.button key={u.id} whileTap={{ scale: 0.97 }} onClick={() => onChoose(u)}
-              style={{
-                padding: '16px 18px', borderRadius: 16,
-                background: `linear-gradient(135deg, ${RARITY_BG[u.rarity]}, #0A0F1E)`,
-                border: `1.5px solid ${RARITY_COLORS[u.rarity]}40`,
-                color: 'white', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 14,
-                boxShadow: `0 4px 20px ${RARITY_COLORS[u.rarity]}15`,
-              }}>
-              <span style={{ fontSize: '2.2rem', flexShrink: 0 }}>{u.emoji}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                  <span style={{ fontWeight: 900, fontSize: '0.95rem' }}>{u.name}</span>
-                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: RARITY_COLORS[u.rarity], backgroundColor: `${RARITY_COLORS[u.rarity]}18`, padding: '2px 6px', borderRadius: 999 }}>
-                    {RARITY_LABEL[u.rarity]}
-                  </span>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          {upgrades.map(u => {
+            const isClassExclusive = !!u.forClass;
+            return (
+              <motion.button key={u.id} whileTap={{ scale: 0.97 }} onClick={() => onChoose(u)}
+                style={{
+                  padding: '13px 16px', borderRadius: 14,
+                  background: isClassExclusive
+                    ? `linear-gradient(135deg, ${buildColor}18, #0A0F1E)`
+                    : `linear-gradient(135deg, ${RARITY_BG[u.rarity]}, #0A0F1E)`,
+                  border: `1.5px solid ${isClassExclusive ? buildColor + '60' : RARITY_COLORS[u.rarity] + '40'}`,
+                  color: 'white', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12,
+                  boxShadow: isClassExclusive
+                    ? `0 4px 20px ${buildColor}20`
+                    : `0 4px 20px ${RARITY_COLORS[u.rarity]}15`,
+                  position: 'relative', overflow: 'hidden',
+                }}>
+                {/* Class-exclusive shimmer */}
+                {isClassExclusive && (
+                  <motion.div animate={{ x: ['-100%', '200%'] }} transition={{ repeat: Infinity, duration: 2.5 }}
+                    style={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg,transparent 40%,${buildColor}15 50%,transparent 60%)`, pointerEvents: 'none' }} />
+                )}
+                <span style={{ fontSize: '2rem', flexShrink: 0 }}>{u.emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2, flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 900, fontSize: '0.9rem' }}>{u.name}</span>
+                    {isClassExclusive && (
+                      <span style={{ fontSize: '0.55rem', fontWeight: 900, color: buildColor, backgroundColor: `${buildColor}22`, padding: '2px 6px', borderRadius: 999, border: `1px solid ${buildColor}40` }}>
+                        {buildName.toUpperCase()}
+                      </span>
+                    )}
+                    <span style={{ fontSize: '0.55rem', fontWeight: 800, color: RARITY_COLORS[u.rarity], backgroundColor: `${RARITY_COLORS[u.rarity]}18`, padding: '2px 6px', borderRadius: 999 }}>
+                      {RARITY_LABEL[u.rarity]}
+                    </span>
+                  </div>
+                  <div style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600 }}>{u.desc}</div>
                 </div>
-                <div style={{ color: '#64748B', fontSize: '0.82rem', fontWeight: 600 }}>{u.desc}</div>
-              </div>
-            </motion.button>
-          ))}
+              </motion.button>
+            );
+          })}
         </div>
-        <button onClick={onSkip} style={{ marginTop: 14, width: '100%', padding: '12px', color: '#334155', fontWeight: 800, fontSize: '0.85rem' }}>
+        <button onClick={onSkip} style={{ marginTop: 12, width: '100%', padding: '10px', color: '#334155', fontWeight: 800, fontSize: '0.82rem' }}>
           Pular →
         </button>
       </motion.div>
@@ -843,10 +895,12 @@ export default function StudySwipeMode() {
         setPlayerShake(true);
         setTimeout(() => setPlayerShake(false), 400);
         resetStreak();
-        setCombatLog(`💢 Errou! ${enemy.name} contra-atacou!`);
+        const modSuffix2 = enemy.modifier === 'enraged' ? ' 💢FURIOSO' : enemy.modifier === 'regen' ? ' 💚Regen+6' : '';
+        setCombatLog(`💢 Errou! −${actualDmg} HP${modSuffix2}`);
       }
     } else {
       // Offline combat
+      const healAmt = player.healOnHit ?? 0;
       const { result, isCrit, actualDmg, correct } = localAttack(opt.isCorrect);
       if (correct) {
         setAttackIsCrit(isCrit);
@@ -859,15 +913,15 @@ export default function StudySwipeMode() {
         playSound(isCrit ? 'crit' : 'hit');
         triggerFlash(isCrit ? '#78350F' : '#162040');
         incrementStreak();
+        const healSuffix = healAmt > 0 ? ` ♥+${healAmt}` : '';
         if (result === 'dead') {
           collectGold(20 + enemy.level * 5);
           addCoins(Math.min(8, 3 + Math.floor(enemy.level / 2)));
           setTimeout(() => { playSound('gold'); playSound('death'); playSound('levelup'); }, 150);
-          setCombatLog(`☠️ ${enemy.name} derrotado! +ouro`);
-          // Tutorial: step 2 → 3 on first kill
+          setCombatLog(`☠️ ${enemy.name} derrotado! +ouro${healSuffix}`);
           if (isTutorial && tutorialStep >= 1) advanceTutorial();
         } else {
-          setCombatLog(isCrit ? `⚡ CRÍTICO! −${actualDmg} HP` : `⚔️ Acertou! −${actualDmg} HP`);
+          setCombatLog(isCrit ? `⚡ CRÍTICO! −${actualDmg} HP${healSuffix}` : `⚔️ Acertou! −${actualDmg} HP${healSuffix}`);
         }
       } else {
         playSound('damage');
@@ -875,7 +929,8 @@ export default function StudySwipeMode() {
         setPlayerShake(true);
         setTimeout(() => setPlayerShake(false), 400);
         resetStreak();
-        setCombatLog(`💢 Errou! −${actualDmg} HP`);
+        const modSuffix = enemy.modifier === 'enraged' ? ' 💢×1.5' : enemy.modifier === 'regen' ? ' 💚+6' : '';
+        setCombatLog(`💢 Errou! −${actualDmg} HP${modSuffix}`);
       }
     }
   };
@@ -907,7 +962,7 @@ export default function StudySwipeMode() {
       <AnimatePresence>{flashColor && <ScreenFlash key={flashColor + Date.now()} color={flashColor} />}</AnimatePresence>
 
       {/* Modals */}
-      <AnimatePresence>{pendingRunUpgrades && !pendingItemDrop && <PowerUpModal upgrades={pendingRunUpgrades} onChoose={(up) => { chooseRunUpgrade(up); /* Tutorial final step */ if (isTutorial && tutorialStep >= 2) { setTimeout(() => advanceTutorial(), 400); } }} onSkip={skipRunUpgrade} />}</AnimatePresence>
+      <AnimatePresence>{pendingRunUpgrades && !pendingItemDrop && <PowerUpModal upgrades={pendingRunUpgrades} playerBuild={player.build} onChoose={(up) => { chooseRunUpgrade(up); if (isTutorial && tutorialStep >= 2) { setTimeout(() => advanceTutorial(), 400); } }} onSkip={skipRunUpgrade} />}</AnimatePresence>
       <AnimatePresence>{pendingItemDrop && !lastEvolvedItem && <ItemChestModal onPick={pickItem} onSkip={dismissItemDrop} ownedIds={runItems.map(x => x.id)} runItems={runItems} />}</AnimatePresence>
       <AnimatePresence>{lastEvolvedItem && <EvolutionRevealModal key={lastEvolvedItem} itemId={lastEvolvedItem} onConfirm={confirmEvolution} />}</AnimatePresence>
 
