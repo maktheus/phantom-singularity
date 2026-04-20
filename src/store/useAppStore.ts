@@ -150,6 +150,34 @@ export interface RunPowerUp {
   apply: (p: PlayerStats) => PlayerStats;
 }
 
+// ─── Shop Blueprints ──────────────────────────────────────────────────────────
+export interface ShopBlueprint {
+  id: string;         // mesmo id do RunPowerUp
+  cost: number;
+  discoverAt: number; // killCount mínimo para aparecer na loja
+}
+
+export const SHOP_BLUEPRINTS: ShopBlueprint[] = [
+  { id: 'r1',  cost: 0,   discoverAt: 0  }, // free (starter)
+  { id: 'r2',  cost: 0,   discoverAt: 0  }, // free (starter)
+  { id: 'r3',  cost: 0,   discoverAt: 0  }, // free (starter)
+  { id: 'r12', cost: 40,  discoverAt: 2  },
+  { id: 'r4',  cost: 60,  discoverAt: 3  },
+  { id: 'r5',  cost: 80,  discoverAt: 5  },
+  { id: 'r6',  cost: 80,  discoverAt: 7  },
+  { id: 'r9',  cost: 100, discoverAt: 10 },
+  { id: 'r10', cost: 150, discoverAt: 12 },
+  { id: 'r11', cost: 120, discoverAt: 15 },
+  { id: 'r7',  cost: 220, discoverAt: 20 },
+  { id: 'r8',  cost: 280, discoverAt: 30 },
+  { id: 'cw1', cost: 90,  discoverAt: 0  },
+  { id: 'cw2', cost: 200, discoverAt: 5  },
+  { id: 'cm1', cost: 90,  discoverAt: 0  },
+  { id: 'cm2', cost: 200, discoverAt: 5  },
+  { id: 'cr1', cost: 90,  discoverAt: 0  },
+  { id: 'cr2', cost: 200, discoverAt: 5  },
+];
+
 // ─── Game State ───────────────────────────────────────────────────────────────
 interface GameState {
   player: PlayerStats;
@@ -222,6 +250,10 @@ interface GameState {
   recordDailyPlay: () => boolean;
   setPremium: (v: boolean) => void;
   addTodayStats: (s: Partial<{ questions: number; kills: number; goldEarned: number; runsCompleted: number }>) => void;
+
+  // Blueprint shop (Dead Cells style)
+  ownedBlueprints: string[];
+  buyBlueprint: (id: string) => boolean;
 
   // Tutorial
   isTutorial: boolean;
@@ -296,7 +328,7 @@ function applyPermanents(base: PlayerStats, ups: PermanentUpgrade[]): PlayerStat
 
 // ─── Run Power-ups (mid-battle random bonus picks) ────────────────────────────
 // ─── Generic power-ups ────────────────────────────────────────────────────────
-const RUN_POWERUPS: RunPowerUp[] = [
+export const RUN_POWERUPS: RunPowerUp[] = [
   // ── Generic (offered to all classes) ──
   { id: 'r1',  rarity: 'common',    emoji: '🗡️', name: 'Fio da Navalha',   desc: '+18 Dano nesta run',              apply: p => ({ ...p, damage: p.damage + 18 }) },
   { id: 'r2',  rarity: 'common',    emoji: '❤️', name: 'Bandagem',          desc: 'Recupera 50 HP',                   apply: p => ({ ...p, hp: Math.min(p.hp + 50, p.maxHp) }) },
@@ -323,18 +355,18 @@ const RUN_POWERUPS: RunPowerUp[] = [
 
 // Lucky roll: 20% chance to offer 4 options (VS-style "chest lottery" dopamine spike)
 // Class-exclusive option always included when available
-function rollPowerUps(build: BuildType): RunPowerUp[] {
-  const classPool   = RUN_POWERUPS.filter(p => p.forClass === build);
-  const genericPool = RUN_POWERUPS.filter(p => !p.forClass);
+function rollPowerUps(build: BuildType, owned: string[]): RunPowerUp[] {
+  // Only pick from owned blueprints (Dead Cells style — you fight with what you unlocked)
+  const pool = RUN_POWERUPS.filter(p => owned.includes(p.id));
+  const classPool   = pool.filter(p => p.forClass === build);
+  const genericPool = pool.filter(p => !p.forClass);
 
-  // Pick one class-exclusive power-up if available
   const classOption = classPool.length > 0
     ? classPool[Math.floor(Math.random() * classPool.length)]
     : null;
 
-  // Lucky: 20% chance for 4 choices instead of 3 (huge dopamine moment)
-  const isLucky = Math.random() < 0.20;
-  const totalSlots   = isLucky ? 4 : 3;
+  const isLucky    = Math.random() < 0.20;
+  const totalSlots = isLucky ? 4 : 3;
   const genericSlots = classOption ? totalSlots - 1 : totalSlots;
 
   const weighted = genericPool.flatMap(p =>
@@ -348,10 +380,16 @@ function rollPowerUps(build: BuildType): RunPowerUp[] {
     if (unique.length >= genericSlots) break;
   }
 
-  // Shuffle class option into a random position
   const result = classOption
     ? [...unique, classOption].sort(() => Math.random() - 0.5)
     : unique;
+
+  // Fallback: if we don't have enough owned, use all generic
+  if (result.length < 2) {
+    const fallback = RUN_POWERUPS.filter(p => !p.forClass)
+      .sort(() => Math.random() - 0.5).slice(0, 3);
+    return fallback;
+  }
 
   return result;
 }
@@ -407,6 +445,7 @@ export const useAppStore = create<GameState>()(
       isTutorial: false,
       tutorialStep: 0,
       unlockedBuilds: ['warrior'] as BuildType[],
+      ownedBlueprints: ['r1', 'r2', 'r3'] as string[],
 
       setHasOnboarded: () => set({ hasOnboarded: true }),
       resetOnboarding: () => set({ hasOnboarded: false }),
@@ -595,7 +634,7 @@ export const useAppStore = create<GameState>()(
 
         // Boss / every 2nd kill: item chest; otherwise power-up choices — constant reward loop
         const dropItem = isBoss || newKills % 2 === 0;
-        const pending  = dropItem ? null : rollPowerUps(player.build);
+        const pending  = dropItem ? null : rollPowerUps(player.build, get().ownedBlueprints);
 
         // Rogue: stacks +2% crit per kill (VS-style power scaling feel)
         if (player.build === 'rogue') {
@@ -642,6 +681,16 @@ export const useAppStore = create<GameState>()(
         if (id === 'p_crit')    p.critChance = Math.min(0.7, p.critChance + 0.05);
         if (id === 'p_gold')    p.goldMultiplier += 0.4;
         set({ gold: gold - cost, permanentUpgrades: newUps, player: p });
+        return true;
+      },
+
+      buyBlueprint: (id) => {
+        const { gold, ownedBlueprints } = get();
+        const item = SHOP_BLUEPRINTS.find(b => b.id === id);
+        if (!item) return false;
+        if (ownedBlueprints.includes(id)) return false;
+        if (gold < item.cost) return false;
+        set({ gold: gold - item.cost, ownedBlueprints: [...ownedBlueprints, id] });
         return true;
       },
 

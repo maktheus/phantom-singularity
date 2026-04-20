@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Share2, ShoppingBag, Repeat, Swords, Crown, Zap } from 'lucide-react';
-import { useAppStore, permanentCost } from '../../store/useAppStore';
-import type { BuildType } from '../../store/useAppStore';
+import { Share2, Repeat, Swords, Crown, Zap } from 'lucide-react';
+import { useAppStore, SHOP_BLUEPRINTS, RUN_POWERUPS } from '../../store/useAppStore';
+import type { BuildType, ShopBlueprint } from '../../store/useAppStore';
 import ChestOpenModal from '../../components/ChestOpenModal';
 import type { CosmeticItem } from '../../data/cosmeticsDb';
 import '../../pixelart.css';
@@ -348,8 +348,8 @@ function PremiumBanner({ onUpgrade }: { onUpgrade: () => void }) {
 export default function HomeLoop() {
   const navigate = useNavigate();
   const {
-    player, gold, killCount, totalQuestionsAnswered,
-    permanentUpgrades, purchasePermanent, startRun,
+    player, killCount, totalQuestionsAnswered,
+    startRun,
     dailyPlaysUsed, dailyStreak, isPremium, todayStats,
     recordDailyPlay,
   } = useAppStore();
@@ -357,7 +357,9 @@ export default function HomeLoop() {
   const setPendingCosmeticChest = useAppStore(s => s.setPendingCosmeticChest);
   const unlockedBuilds = useAppStore(s => s.unlockedBuilds);
 
-  const [buyFeedback, setBuyFeedback] = useState<{ id: string; ok: boolean } | null>(null);
+  const gold             = useAppStore(s => s.gold);
+  const ownedBlueprints  = useAppStore(s => s.ownedBlueprints);
+  const buyBlueprint     = useAppStore(s => s.buyBlueprint);
   const [showBuildSelect, setShowBuildSelect] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [timeToReset, setTimeToReset] = useState('');
@@ -380,12 +382,6 @@ export default function HomeLoop() {
   const handleChestClose = (_item: CosmeticItem) => {
     setPendingCosmeticChest(false);
     navigate('/hero');
-  };
-
-  const handleBuy = (id: string) => {
-    const ok = purchasePermanent(id);
-    setBuyFeedback({ id, ok });
-    setTimeout(() => setBuyFeedback(null), 800);
   };
 
   const handleStartRun = (build: BuildType) => {
@@ -613,60 +609,57 @@ export default function HomeLoop() {
           ))}
         </div>
 
-        {/* ── Permanent Upgrades ── */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 9, background: 'linear-gradient(135deg,#7C3AED,#4C1D95)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ShoppingBag size={14} color="white" />
-            </div>
-            <h2 style={{ fontWeight: 900, fontSize: '1rem' }}>Melhorias Permanentes</h2>
+        {/* ── LOJA DE PODER (Blueprint Shop) ── */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontWeight: 900, fontSize: '0.9rem' }}>⚗️ Loja de Poder</span>
+            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#FBBF24' }}>🪙 {gold} ouro</span>
           </div>
-          <p style={{ color: '#334155', fontSize: '0.75rem', fontWeight: 700, marginBottom: 12, paddingLeft: 38 }}>
-            Aplicadas no início de TODA run
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-            {permanentUpgrades.map(u => {
-              const cost = permanentCost(u);
-              const canBuy = gold >= cost && u.level < u.maxLevel;
-              const isFull = u.level >= u.maxLevel;
-              const fb = buyFeedback?.id === u.id;
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {SHOP_BLUEPRINTS.filter((b: ShopBlueprint) => b.discoverAt <= killCount).map((bp: ShopBlueprint) => {
+              const powerUp = RUN_POWERUPS.find(p => p.id === bp.id);
+              const owned = ownedBlueprints.includes(bp.id);
+              const canAfford = gold >= bp.cost;
               return (
-                <AnimatePresence key={u.id} mode="wait">
-                  <motion.div
-                    animate={fb && !buyFeedback!.ok ? { x: [-6,6,-4,4,0] } : {}}
-                    style={{
-                      backgroundColor: '#111827', borderRadius: 14, padding: '12px 16px',
-                      border: `2px solid ${fb && buyFeedback!.ok ? '#22C55E' : fb ? '#EF4444' : '#1E293B'}`,
-                      display: 'flex', alignItems: 'center', gap: 12, transition: 'border-color 0.3s',
-                    }}>
-                    <span style={{ fontSize: '1.8rem', flexShrink: 0 }}>{u.emoji}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>
-                        {u.name}
-                        {u.level > 0 && <span style={{ marginLeft: 7, fontSize: '0.68rem', color: '#A78BFA', fontWeight: 800 }}>Lv.{u.level}</span>}
-                      </div>
-                      <div style={{ color: '#475569', fontSize: '0.75rem', fontWeight: 700, marginTop: 1 }}>{u.description}</div>
-                      <div style={{ display: 'flex', gap: 3, marginTop: 6 }}>
-                        {Array.from({ length: u.maxLevel }).map((_, i) => (
-                          <div key={i} style={{ flex: 1, height: 3, borderRadius: 999, backgroundColor: i < u.level ? '#A78BFA' : '#1E293B' }} />
-                        ))}
-                      </div>
+                <div key={bp.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 14,
+                  background: owned ? 'rgba(34,197,94,0.08)' : '#0F172A',
+                  border: `1.5px solid ${owned ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                  opacity: (!owned && !canAfford) ? 0.5 : 1,
+                }}>
+                  <span style={{ fontSize: '1.4rem' }}>{powerUp?.emoji ?? '❓'}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.8rem', color: owned ? '#86EFAC' : '#E2E8F0' }}>
+                      {powerUp?.name ?? bp.id}
                     </div>
-                    <button onClick={() => handleBuy(u.id)} disabled={!canBuy}
+                    <div style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 600, marginTop: 2 }}>
+                      {powerUp?.desc ?? ''}
+                    </div>
+                  </div>
+                  {owned ? (
+                    <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#22C55E' }}>✓ Ativo</span>
+                  ) : bp.cost === 0 ? (
+                    <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#FBBF24' }}>Grátis</span>
+                  ) : (
+                    <motion.button whileTap={{ scale: 0.95 }}
+                      onClick={() => buyBlueprint(bp.id)}
+                      disabled={!canAfford}
                       style={{
-                        padding: '9px 12px', borderRadius: 10, fontWeight: 900,
-                        backgroundColor: isFull ? '#1E293B' : canBuy ? '#6D28D9' : '#111827',
-                        color: isFull ? '#475569' : canBuy ? 'white' : '#334155',
-                        border: `1.5px solid ${isFull ? '#1E293B' : canBuy ? '#7C3AED' : '#1E293B'}`,
-                        boxShadow: canBuy ? '0 4px 0 #4C1D95' : 'none',
-                        fontSize: '0.8rem', whiteSpace: 'nowrap',
+                        padding: '6px 12px', borderRadius: 10, fontWeight: 900, fontSize: '0.72rem',
+                        background: canAfford ? 'linear-gradient(135deg, #D97706, #92400E)' : '#1E293B',
+                        color: canAfford ? '#000' : '#334155', border: 'none', cursor: canAfford ? 'pointer' : 'default',
                       }}>
-                      {isFull ? 'MAX ✓' : `🪙 ${cost}`}
-                    </button>
-                  </motion.div>
-                </AnimatePresence>
+                      🪙 {bp.cost}
+                    </motion.button>
+                  )}
+                </div>
               );
             })}
+            {SHOP_BLUEPRINTS.filter((b: ShopBlueprint) => b.discoverAt <= killCount).length === 0 && (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#334155', fontSize: '0.78rem', fontWeight: 700 }}>
+                Derrote inimigos para desbloquear itens na loja!
+              </div>
+            )}
           </div>
         </div>
       </div>

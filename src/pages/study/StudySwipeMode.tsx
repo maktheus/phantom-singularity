@@ -786,6 +786,91 @@ function BuildStrip({ runItems, onPress }: { runItems: RunItem[]; onPress: () =>
   );
 }
 
+// ─── Question Preview Modal ───────────────────────────────────────────────────
+function QuestionPreviewModal({ question, onReveal }: { question: any; onReveal: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 1.04 }}
+      transition={{ duration: 0.2 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 180,
+        background: 'rgba(0,0,0,0.88)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '24px 20px',
+        backdropFilter: 'blur(6px)',
+      }}>
+      <motion.div
+        initial={{ y: 40, scale: 0.93 }}
+        animate={{ y: 0, scale: 1 }}
+        exit={{ y: -20, scale: 0.96 }}
+        transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+        style={{ width: '100%', maxWidth: 500 }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ repeat: Infinity, duration: 1.4 }}
+            style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
+          <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#475569', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            Leia com atenção
+          </span>
+        </div>
+
+        {/* Optional passage */}
+        {question.passage && (
+          <div style={{
+            marginBottom: 14, borderRadius: 14, overflow: 'hidden',
+            border: '1px solid #334155',
+          }}>
+            <div style={{ padding: '8px 14px', background: '#1E293B', fontSize: '0.65rem', fontWeight: 900, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {question.passageTitle ?? 'Texto de referência:'}
+            </div>
+            <div style={{
+              maxHeight: 160, overflowY: 'auto', padding: '12px 14px',
+              background: '#0A0F1E', fontSize: '0.85rem', lineHeight: 1.7, color: '#CBD5E1',
+              fontStyle: 'italic', whiteSpace: 'pre-line', scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent',
+            }}>{question.passage}</div>
+          </div>
+        )}
+
+        {/* Question text */}
+        <div style={{
+          background: '#0F172A', borderRadius: 16, padding: '18px 16px',
+          border: '1px solid #1E293B', marginBottom: 24,
+          fontSize: '1rem', fontWeight: 700, lineHeight: 1.65, color: '#E2E8F0',
+        }}>
+          {question.passage && (
+            <span style={{ display: 'block', fontSize: '0.6rem', fontWeight: 900, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
+              Com base no texto acima:
+            </span>
+          )}
+          {question.text}
+        </div>
+
+        {/* Reveal button */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={onReveal}
+          style={{
+            width: '100%', padding: '18px',
+            background: 'linear-gradient(135deg, #EF4444, #B91C1C)',
+            color: 'white', borderRadius: 16,
+            fontWeight: 900, fontSize: '1.05rem',
+            boxShadow: '0 5px 0 #7F1D1D',
+            border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          }}>
+          ⚔️ Ver Alternativas!
+        </motion.button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function StudySwipeMode() {
   const navigate = useNavigate();
@@ -802,6 +887,7 @@ export default function StudySwipeMode() {
   } = useAppStore();
 
   const [qIndex, setQIndex]           = useState(0);
+  const [questionRevealed, setQuestionRevealed] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState<null | number>(null);
   const [enemyShake, setEnemyShake]   = useState(false);
   const [enemyFlash, setEnemyFlash]   = useState(false);
@@ -815,6 +901,9 @@ export default function StudySwipeMode() {
   const [questionQueue, setQuestionQueue] = useState<any[]>([]);
   const [aiStatus, setAiStatus]       = useState<'idle' | 'ok' | 'offline'>('idle');
   const [shownHint, setShownHint]     = useState<number>(-1); // last hint step shown
+
+  // Reset question preview on each new question
+  useEffect(() => { setQuestionRevealed(false); }, [qIndex]);
 
   // Tutorial hint timing
   useEffect(() => {
@@ -841,7 +930,15 @@ export default function StudySwipeMode() {
   }, [storeConcurso, runId, currentQuestions]);
 
   const currentQ = questionQueue[qIndex % Math.max(1, questionQueue.length)];
-  const shuffledOpts = useMemo(() => (currentQ ? currentQ.options as any[] : []), [qIndex, questionQueue, currentQ]);
+  const shuffledOpts = useMemo(() => {
+    if (!currentQ) return [];
+    const opts = [...(currentQ.options as any[])];
+    for (let i = opts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [opts[i], opts[j]] = [opts[j], opts[i]];
+    }
+    return opts;
+  }, [qIndex, questionQueue]);
   const selectedOpt  = useMemo(() => selectedIdx !== null ? shuffledOpts[selectedIdx] : null, [selectedIdx, shuffledOpts]);
 
   const addCoins = useCallback((n: number) => {
@@ -1266,6 +1363,13 @@ export default function StudySwipeMode() {
                 : selectedOpt?.isCorrect ? '✓ Próxima questão →' : '→ Continuar'}
             </motion.button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Question Preview Modal ── */}
+      <AnimatePresence>
+        {!questionRevealed && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && currentQ && (
+          <QuestionPreviewModal key={`preview-${qIndex}`} question={currentQ} onReveal={() => setQuestionRevealed(true)} />
         )}
       </AnimatePresence>
 

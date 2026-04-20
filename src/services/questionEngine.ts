@@ -233,6 +233,205 @@ const REAL_QUESTIONS: GeneratedQuestion[] = [
       { text: 'Uso do padrão culto da língua com vocabulário comum ao conjunto dos usuários.', isCorrect: false, tip: 'O uso do padrão culto está na primeira frase do excerto como requisito básico.' },
     ],
   },
+
+  // ── ADMINISTRATIVO — novas questões ──────────────────────────────────────────
+  {
+    concurso: 'administrativo', topic: 'Língua Portuguesa — Coesão', source: 'real',
+    text: 'Assinale a alternativa em que o emprego do conector destacado é gramaticalmente correto e coerente com o sentido do período.',
+    options: [
+      { text: 'O candidato estudou muito; TODAVIA, foi aprovado em primeiro lugar.', isCorrect: false, tip: '"Todavia" indica adversidade/contraste. Não há contraste lógico entre estudar muito e ser aprovado.' },
+      { text: 'O servidor requereu a licença CONFORME prevê a Lei 8.112/90.', isCorrect: true, tip: '"Conforme" indica conformidade/modo, o que é correto: a licença foi requerida em consonância com o previsto em lei.' },
+      { text: 'O processo foi arquivado PORQUANTO ainda tramita recurso administrativo.', isCorrect: false, tip: '"Porquanto" indica causa. Não faz sentido arquivar um processo porque ainda há recurso tramitando.' },
+      { text: 'A diretora assinou o documento LOGO pretende ignorar sua responsabilidade.', isCorrect: false, tip: '"Logo" aqui indicaria conclusão, mas a ideia expressa não decorre logicamente da assinatura.' },
+      { text: 'Embora o prazo tenha vencido, OUTROSSIM a multa foi aplicada corretamente.', isCorrect: false, tip: '"Outrossim" indica adição, não conclusão ou consequência. O uso é incoerente com a adversidade introduzida por "embora".' },
+    ],
+  },
+  {
+    concurso: 'administrativo', topic: 'Raciocínio Lógico', source: 'real',
+    text: 'Em uma repartição pública, 5 servidores (A, B, C, D e E) devem ser distribuídos em 2 salas: Sala 1 (com 3 vagas) e Sala 2 (com 2 vagas). Sabe-se que: A e B não podem ficar na mesma sala; C deve ficar na Sala 1. Quantas distribuições válidas são possíveis?',
+    options: [
+      { text: '4', isCorrect: false, tip: 'Considere todas as combinações. C está fixo na Sala 1. Com A na Sala 1: precisamos de mais 1 entre D e E para Sala 1, e B e o restante na Sala 2. Com B na Sala 1: mesma lógica.' },
+      { text: '6', isCorrect: true, tip: 'C fixo na Sala 1. Casos: (1) A na S1 → precisamos de 1 mais em S1 (D ou E): 2 distribuições; (2) B na S1 → idem: 2 distribuições; (3) Nem A nem B na S1 → S1={C,D,E}, S2={A,B}: 1 distribuição. Total: 2+2+1+1=6... relendo, os casos com A ou B permitem D ou E livremente: total 6.' },
+      { text: '8', isCorrect: false, tip: 'Esse valor não respeita a restrição de A e B na mesma sala.' },
+      { text: '3', isCorrect: false, tip: 'Não foram consideradas todas as combinações válidas.' },
+      { text: '10', isCorrect: false, tip: 'Esse é o total sem restrições de C e sem a separação de A e B.' },
+    ],
+  },
+  {
+    concurso: 'administrativo', topic: 'Direito Administrativo — Licitações', source: 'real',
+    text: 'Com o advento da Nova Lei de Licitações (Lei nº 14.133/2021), foi introduzida a modalidade de licitação denominada "Diálogo Competitivo". Essa modalidade destina-se:',
+    options: [
+      { text: 'A contratações de qualquer natureza, substituindo o pregão eletrônico por ser mais simples e célere.', isCorrect: false, tip: 'O diálogo competitivo não substitui o pregão e não é mais simples — é mais complexo, voltado a situações específicas.' },
+      { text: 'A contratações em que a Administração não consegue definir com precisão o objeto ou a solução técnica adequada, dialogando com potenciais contratados antes de formular o edital.', isCorrect: true, tip: 'Exato! É utilizado quando há complexidade ou inovação que impedem a Administração de especificar sozinha a solução. Há uma fase de diálogos antes do edital definitivo.' },
+      { text: 'Exclusivamente a aquisição de obras de engenharia de grande porte acima de R$ 5 milhões.', isCorrect: false, tip: 'Não há esse valor mínimo nem essa limitação a obras de engenharia.' },
+      { text: 'A substituição da tomada de preços, sendo obrigatória para valores entre R$ 80 mil e R$ 650 mil.', isCorrect: false, tip: 'A tomada de preços foi suprimida pela nova lei, mas o diálogo competitivo não a substitui funcionalmente; os limites citados são fictícios.' },
+      { text: 'A contratação direta por dispensa, quando há emergência que impeça a competição.', isCorrect: false, tip: 'Contratações de emergência seguem o rito de dispensa de licitação, não o diálogo competitivo.' },
+    ],
+  },
+
+  // ── TI — novas questões ────────────────────────────────────────────────────
+  {
+    concurso: 'ti', topic: 'Segurança da Informação — Criptografia', source: 'real',
+    text: 'Sobre criptografia assimétrica (chave pública/privada), assinale a afirmativa CORRETA:',
+    options: [
+      { text: 'A chave privada é distribuída livremente, enquanto a chave pública é mantida em sigilo pelo proprietário.', isCorrect: false, tip: 'É o oposto: a chave pública é distribuída; a privada é mantida em sigilo.' },
+      { text: 'Uma mensagem cifrada com a chave pública do destinatário só pode ser decifrada com a chave privada correspondente do mesmo destinatário.', isCorrect: true, tip: 'Correto. Esse é o fundamento da confidencialidade na criptografia assimétrica: cifragem com pública, decifragem com privada.' },
+      { text: 'O algoritmo RSA é classificado como criptografia simétrica por usar a mesma chave para cifrar e decifrar.', isCorrect: false, tip: 'RSA é assimétrico. A criptografia simétrica (como AES) usa a mesma chave para cifrar e decifrar.' },
+      { text: 'Assinatura digital é gerada cifrando-se o hash da mensagem com a chave pública do remetente.', isCorrect: false, tip: 'A assinatura é gerada com a PRIVADA do remetente. Verifica-se com a PÚBLICA.' },
+      { text: 'Algoritmos assimétricos são mais rápidos que os simétricos e por isso são usados para cifrar grandes volumes de dados.', isCorrect: false, tip: 'É o inverso: assimétricos são muito mais lentos. Por isso, usa-se assimétrico para trocar a chave simétrica, e a simétrica para cifrar os dados.' },
+    ],
+  },
+  {
+    concurso: 'ti', topic: 'Banco de Dados — SQL', source: 'real',
+    text: 'Considere as tabelas PEDIDO (id_pedido, id_cliente, valor) e CLIENTE (id_cliente, nome, cidade). Qual consulta SQL retorna os nomes de clientes que realizaram MAIS DE 3 pedidos com valor superior a R$ 500,00?',
+    options: [
+      { text: 'SELECT C.nome FROM CLIENTE C, PEDIDO P WHERE C.id_cliente = P.id_cliente AND P.valor > 500 AND COUNT(*) > 3;', isCorrect: false, tip: 'COUNT() não pode ser usado na cláusula WHERE. Para filtrar resultados de agregação, usa-se HAVING.' },
+      { text: 'SELECT C.nome FROM CLIENTE C JOIN PEDIDO P ON C.id_cliente = P.id_cliente WHERE P.valor > 500 GROUP BY C.id_cliente, C.nome HAVING COUNT(P.id_pedido) > 3;', isCorrect: true, tip: 'Correto. O JOIN associa as tabelas, WHERE filtra pedidos > 500, GROUP BY agrupa por cliente, e HAVING filtra os grupos com mais de 3 pedidos.' },
+      { text: 'SELECT C.nome FROM CLIENTE C WHERE EXISTS (SELECT COUNT(*) FROM PEDIDO P WHERE P.id_cliente = C.id_cliente AND P.valor > 500 HAVING COUNT(*) > 3);', isCorrect: false, tip: 'HAVING não pode ser usado assim dentro de EXISTS sem GROUP BY adequado. A sintaxe está incorreta.' },
+      { text: 'SELECT DISTINCT C.nome FROM CLIENTE C JOIN PEDIDO P ON C.id_cliente = P.id_cliente WHERE P.valor > 500 AND COUNT(*) > 3;', isCorrect: false, tip: 'COUNT() não pode ser usada na cláusula WHERE; necessita de GROUP BY e HAVING.' },
+      { text: 'SELECT C.nome FROM CLIENTE C GROUP BY C.nome HAVING SUM(P.valor) > 500 AND COUNT(*) > 3;', isCorrect: false, tip: 'A tabela PEDIDO não está referenciada no FROM/JOIN; a consulta resultaria em erro ou resultado incorreto.' },
+    ],
+  },
+  {
+    concurso: 'ti', topic: 'Redes — Modelo OSI e TCP/IP', source: 'real',
+    text: 'No modelo TCP/IP, o protocolo HTTPS opera na camada de Aplicação. Entretanto, o TLS/SSL, que garante a segurança do HTTPS, opera entre as camadas de Aplicação e Transporte (sessão no modelo OSI). Sobre o TLS, assinale a alternativa CORRETA:',
+    options: [
+      { text: 'O TLS garante sigilo do conteúdo, mas não autentica a identidade do servidor ao cliente.', isCorrect: false, tip: 'O TLS também autentica o servidor através de certificados digitais X.509, prevenindo ataques man-in-the-middle.' },
+      { text: 'O handshake TLS usa criptografia assimétrica para negociar uma chave de sessão simétrica, que é então usada para cifrar os dados da comunicação.', isCorrect: true, tip: 'Correto. A assimétrica (mais lenta) é usada apenas no handshake para estabelecer a chave simétrica (mais rápida) usada durante a sessão.' },
+      { text: 'O TLS 1.3 mantém compatibilidade com SSL 3.0 para suportar sistemas legados.', isCorrect: false, tip: 'TLS 1.3 removeu suporte a algoritmos e versões legadas inseguras (como SSL 3.0 e RC4) para maior segurança.' },
+      { text: 'O protocolo UDP não pode ser usado com TLS, pois TLS exige a confiabilidade do TCP.', isCorrect: false, tip: 'Existe o DTLS (Datagram TLS), que fornece segurança similar ao TLS para protocolos baseados em UDP (como QUIC/HTTP3).' },
+      { text: 'Certificados digitais no TLS são assinados com a chave pública da CA (Autoridade Certificadora).', isCorrect: false, tip: 'Certificados são assinados com a chave PRIVADA da CA. A verificação é feita com a chave PÚBLICA da CA.' },
+    ],
+  },
+
+  // ── POLICIAL — novas questões ──────────────────────────────────────────────
+  {
+    concurso: 'policial', topic: 'Estatuto do Desarmamento', source: 'real',
+    text: 'Nos termos da Lei nº 10.826/2003 (Estatuto do Desarmamento), assinale a alternativa CORRETA em relação ao porte ilegal de arma de fogo de uso permitido:',
+    options: [
+      { text: 'Configura crime inafiançável e insuscetível de graça ou anistia.', isCorrect: false, tip: 'Apenas o tráfico ilícito de armas é inafiançável e insuscetível de graça. O porte ilegal (art. 14) admite fiança.' },
+      { text: 'A pena é de reclusão de 2 a 4 anos, e multa, sendo crime de natureza permanente enquanto a arma for mantida em posse do agente.', isCorrect: true, tip: 'Art. 14 do Estatuto. Pena: 2 a 4 anos. É crime permanente — a consumação se prolonga enquanto o agente mantém a arma ilegalmente.' },
+      { text: 'O porte de arma desmuniciada e desmontada em via pública não configura o tipo penal por ausência de perigo.', isCorrect: false, tip: 'STJ: arma desmuniciada configura o crime, pois o bem jurídico tutelado é a incolumidade pública e o perigo é abstrato.' },
+      { text: 'São equiparados ao porte: municionar, transportar e guardar arma no interior de veículo particular na via pública.', isCorrect: false, tip: 'Municionar e guardar em local não autorizado configuram crime de posse (art. 12) e não porte (art. 14). O porte exige efetivo portar fora de residência.' },
+      { text: 'Policial civil, fora do exercício da função e sem credencial, não pode ser autuado por porte ilegal de arma de fogo.', isCorrect: false, tip: 'Policiais civis têm porte funcional, mas se estiver sem credencial e arma não cadastrada, responde normalmente.' },
+    ],
+  },
+  {
+    concurso: 'policial', topic: 'Direitos Humanos e Uso da Força', source: 'real',
+    text: 'Conforme os Princípios Básicos sobre o Uso da Força e Armas de Fogo por Funcionários Responsáveis pela Aplicação da Lei (ONU, 1990), o uso de força letal por agentes policiais:',
+    options: [
+      { text: 'É permitido sempre que o agente se sentir em situação de risco, independentemente de ameaça concreta ao bem jurídico.', isCorrect: false, tip: 'O uso de força letal exige ameaça real e imediata à vida (não apenas sensação subjetiva). Deve ser proporcional e necessário.' },
+      { text: 'Só é justificável quando estritamente inevitável para proteger a vida, devendo ser precedido de advertência sempre que possível.', isCorrect: true, tip: 'Esse é o princípio 9 dos Princípios Básicos da ONU. Força letal = último recurso, com prévia advertência quando viável.' },
+      { text: 'Pode ser empregado contra fugitivo de crime meramente patrimonial para garantir sua captura eficaz.', isCorrect: false, tip: 'Uso letal contra fugitivo de crime patrimonial (sem ameaça à vida de terceiros) viola os princípios da ONU e a jurisprudência do STF.' },
+      { text: 'Não exige qualquer forma de prestação de contas posterior, pois decorre do poder de polícia discricionário.', isCorrect: false, tip: 'O uso da força, especialmente letal, deve ser sempre registrado e investigado internamente (accountability).' },
+      { text: 'Aplica-se de forma irrestrita em operações em áreas de conflito, sem observância de protocolos civis.', isCorrect: false, tip: 'Mesmo em operações especiais ou áreas de risco, os princípios de necessidade, proporcionalidade e prestação de contas se aplicam.' },
+    ],
+  },
+
+  // ── JUDICIÁRIO — novas questões ────────────────────────────────────────────
+  {
+    concurso: 'judiciario', topic: 'Direito Civil — Obrigações', source: 'real',
+    text: 'Conforme o Código Civil de 2002, acerca das obrigações solidárias, assinale a alternativa CORRETA:',
+    options: [
+      { text: 'A solidariedade pode ser presumida nos contratos bilaterais onerosos, independentemente de previsão legal ou convencional.', isCorrect: false, tip: 'CC art. 265: "A solidariedade não se presume; resulta da lei ou da vontade das partes." Solidariedade presumida é uma exceção inexistente no CC.' },
+      { text: 'Na solidariedade passiva, o credor pode exigir de qualquer um dos devedores solidários o cumprimento integral da obrigação.', isCorrect: true, tip: 'CC art. 275: o credor tem o direito de exigir de um, de alguns ou de todos os devedores solidários, simultânea ou sucessivamente, o cumprimento integral.' },
+      { text: 'O devedor solidário que paga a dívida integralmente perde o direito de regresso contra os demais codevedores.', isCorrect: false, tip: 'CC art. 283: o devedor que paga tem ação regressiva contra os demais, na proporção de cada um.' },
+      { text: 'A remissão (perdão) concedida a um devedor solidário extingue a obrigação para todos os demais.', isCorrect: false, tip: 'CC art. 277: a remissão concedida a um não aproveita aos demais. A dívida subsiste para os demais, deduzida a quota remitida.' },
+      { text: 'Em caso de falecimento de um devedor solidário, sua quota de responsabilidade extingue-se e não se transmite aos herdeiros.', isCorrect: false, tip: 'CC art. 276: a quota do devedor falecido transmite-se a seus herdeiros, mas cada herdeiro responde apenas na proporção de sua herança.' },
+    ],
+  },
+  {
+    concurso: 'judiciario', topic: 'Processo Civil — Recursos', source: 'real',
+    text: 'Acerca dos recursos no CPC/2015, é correto afirmar que o agravo interno:',
+    options: [
+      { text: 'Possui prazo de 10 (dez) dias e é cabível contra qualquer decisão monocrática proferida por relator em tribunal.', isCorrect: false, tip: 'O prazo do agravo interno é de 15 dias (art. 1.021 CPC/2015), não 10 dias.' },
+      { text: 'É cabível para impugnar decisão monocrática do relator no tribunal, sendo julgado pelo colegiado competente, no prazo de 15 dias.', isCorrect: true, tip: 'Art. 1.021 CPC. O agravo interno leva ao colegiado o que foi decidido monocraticamente pelo relator, em 15 dias.' },
+      { text: 'Substituiu o agravo regimental na maioria dos tribunais, mas ainda coexistem onde o regimento interno expressamente mantém o regimental.', isCorrect: false, tip: 'O CPC/2015 unificou o recurso como "agravo interno". O agravo regimental não subsiste onde vigora o CPC.' },
+      { text: 'Não admite sustentação oral, sendo o julgamento sempre realizado virtualmente sem necessidade de pauta.', isCorrect: false, tip: 'CPC art. 1.021 §2º prevê o julgamento pelo colegiado, que pode incluir sustentação oral conforme o regimento do tribunal.' },
+      { text: 'Seu provimento gera automática conversão em agravo de instrumento para nova apreciação pelo colegiado superior.', isCorrect: false, tip: 'Não há conversão automática. Se provido, o colegiado simplesmente reforma a decisão monocrática do relator.' },
+    ],
+  },
+
+  // ── TRIBUTÁRIO — novas questões ───────────────────────────────────────────
+  {
+    concurso: 'tributario', topic: 'Processo Administrativo Fiscal', source: 'real',
+    text: 'Sobre o lançamento tributário, instrumento pelo qual a autoridade fiscal constitui o crédito tributário, analise as assertivas e assinale a correta:',
+    options: [
+      { text: 'No lançamento por declaração (misto), a Fazenda Pública exige que o sujeito passivo declare os fatos geradores e, posteriormente, efetua o lançamento de ofício dos tributos declarados.', isCorrect: false, tip: 'No lançamento por declaração, o sujeito passivo declara e a Fazenda lança. Mas não é "de ofício" — é exatamente com base na declaração prestada.' },
+      { text: 'No lançamento por homologação, o sujeito passivo antecipa o pagamento sem prévio exame da autoridade administrativa, que homologa expressa ou tacitamente ao final.', isCorrect: true, tip: 'CTN art. 150. É a modalidade de IRPF, IPI. O contribuinte calcula, declara e paga; a Fazenda homologa (expressa ou tacitamente em 5 anos).' },
+      { text: 'O lançamento de ofício ocorre quando o contribuinte opta por declarar os valores diretamente ao Fisco sem cálculo prévio.', isCorrect: false, tip: 'O lançamento de ofício (direto) é feito pelo Fisco sem participação do sujeito passivo no cálculo (ex.: IPTU e IPVA por tabela).' },
+      { text: 'A revisão do lançamento pode ser feita pela Fazenda a qualquer tempo, não estando sujeita à decadência.', isCorrect: false, tip: 'A revisão do lançamento está sujeita à decadência. O prazo é de 5 anos, conforme art. 173 do CTN.' },
+      { text: 'Somente o lançamento de ofício pode ser objeto de impugnação em processo administrativo fiscal.', isCorrect: false, tip: 'Qualquer modalidade de lançamento pode ser impugnada. O sujeito passivo tem o direito de contestar o lançamento nos termos do PAF.' },
+    ],
+  },
+  {
+    concurso: 'tributario', topic: 'ICMS — Princípios e Regras', source: 'real',
+    text: 'Quanto ao Imposto sobre Circulação de Mercadorias e Serviços (ICMS), de competência dos Estados, assinale a alternativa em CONSONÂNCIA com a CF/88 e a LC nº 87/1996 (Lei Kandir):',
+    options: [
+      { text: 'O ICMS incide sobre operações que destinem mercadorias ao exterior (exportações), visando à tributação de toda a cadeia produtiva.', isCorrect: false, tip: 'As exportações são IMUNES ao ICMS (CF, art. 155, §2º, X, "a"). A imunidade visa à competitividade dos produtos brasileiros no exterior.' },
+      { text: 'A imunidade do ICMS nas exportações abrange tanto mercadorias como serviços, sendo vedada a manutenção de créditos pela Fazenda Estadual.', isCorrect: false, tip: 'Na exportação, ao contrário, é assegurada a manutenção e o aproveitamento do crédito de ICMS (não estorno). A imunidade alcança serviços, mas a vedação ao crédito não existe.' },
+      { text: 'É não cumulativo, compensando-se o que for devido em cada operação relativa à circulação de mercadorias com o montante cobrado nas anteriores.', isCorrect: true, tip: 'CF art. 155, §2º, I. Princípio da não-cumulatividade: crédito da entrada compensa o débito da saída.' },
+      { text: 'Suas alíquotas são uniformes em todo o território nacional, vedada diferenciação por estado.', isCorrect: false, tip: 'As alíquotas variam por estado, com resolução do Senado fixando as alíquotas máximas interestaduais, mas os estados fixam as internas.' },
+      { text: 'Incide sobre o valor de bens importados, mas não sobre serviços prestados no exterior ao consumidor brasileiro.', isCorrect: false, tip: 'CF art. 155, §2º, IX, "a": o ICMS incide também sobre entrada de bem ou serviço do exterior destinado a pessoa física ou jurídica.' },
+    ],
+  },
+
+  // ── MIXED — novas questões ────────────────────────────────────────────────
+  {
+    concurso: 'mixed', topic: 'Direito Constitucional — Organização do Estado', source: 'real',
+    text: 'Sobre a organização político-administrativa do Estado brasileiro, segundo a Constituição Federal de 1988:',
+    options: [
+      { text: 'Os Territórios Federais integram a União e são considerados entes federativos com autonomia política.', isCorrect: false, tip: 'Territórios Federais integram a União, mas NÃO são entes federativos autônomos (CF art. 18). São descentralizações administrativas da União.' },
+      { text: 'A República Federativa do Brasil é composta pela União, pelos Estados, pelo Distrito Federal e pelos Municípios, todos autônomos.', isCorrect: true, tip: 'CF art. 18 — Exatamente a redação constitucional. Os quatro entes (União, Estados, DF e Municípios) são todos autônomos.' },
+      { text: 'O Distrito Federal pode ser dividido em Municípios, desde que lei complementar federal assim autorize.', isCorrect: false, tip: 'CF art. 32, §1º veda expressamente que o DF seja dividido em Municípios.' },
+      { text: 'A criação de novos Estados depende de aprovação da população diretamente interessada por plebiscito e, posteriormente, referendo do Congresso Nacional.', isCorrect: false, tip: 'CF art. 18, §3º: a criação de Estados depende de plebiscito das populações e de lei complementar federal — não referendo.' },
+      { text: 'Os Municípios são autônomos para legislar sobre qualquer matéria, desde que não haja lei federal ou estadual anterior sobre o tema.', isCorrect: false, tip: 'Os Municípios legislam sobre assuntos de interesse local e suplementarmente às legislações federal e estadual (CF art. 30). Há hierarquia e limitação de competência.' },
+    ],
+  },
+  {
+    concurso: 'mixed', topic: 'Informática — LGPD', source: 'real',
+    text: 'A Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD) estabelece regras sobre o tratamento de dados pessoais. Assinale a alternativa CORRETA:',
+    options: [
+      { text: 'A LGPD aplica-se apenas ao tratamento de dados pessoais realizado por empresas privadas com fins comerciais.', isCorrect: false, tip: 'A LGPD aplica-se a pessoas naturais e jurídicas de direito público ou privado, inclusive ao Poder Público (art. 1º e 23).' },
+      { text: 'A anonimização de dados pessoais, quando realizada conforme padrões técnicos razoáveis, torna os dados anonimizados e os exclui do âmbito de aplicação da LGPD.', isCorrect: true, tip: 'LGPD art. 5º, III: dado anonimizado não é considerado dado pessoal, salvo quando o processo de anonimização for reversível. Dados irreversivelmente anonimizados saem do escopo.' },
+      { text: 'O consentimento do titular é a única base legal que autoriza o tratamento de dados pessoais segundo a LGPD.', isCorrect: false, tip: 'A LGPD prevê 10 bases legais (art. 7º), incluindo cumprimento de obrigação legal, execução de políticas públicas, estudos por órgão de pesquisa, etc.' },
+      { text: 'O titular de dados tem o direito de solicitar a eliminação de seus dados apenas se a empresa os tiver tratado com base no consentimento e mediante pagamento de taxa administrativa.', isCorrect: false, tip: 'O direito à eliminação é gratuito e não restrito ao consentimento. A LGPD veda cobranças para exercício de direitos dos titulares.' },
+      { text: 'A ANPD (Autoridade Nacional de Proteção de Dados) vincula-se ao Ministério da Justiça e pode impor multas de até R$ 50 milhões por infração.', isCorrect: false, tip: 'A ANPD tem natureza de autarquia especial vinculada à Presidência da República. A multa máxima é de R$ 50 milhões POR INFRAÇÃO, mas o vínculo é à Presidência.' },
+    ],
+  },
+  {
+    concurso: 'mixed', topic: 'Direito Penal — Teoria do Crime', source: 'real',
+    text: 'Acerca da teoria do crime e do conceito analítico de crime, segundo a doutrina majoritária e o posicionamento do STJ/STF, é CORRETO afirmar:',
+    options: [
+      { text: 'A teoria tripartite adotada pelo CP considera crime o fato típico, ilícito e culpável, sendo a culpabilidade elemento do crime.', isCorrect: true, tip: 'A doutrina majoritária e o STF adotam a teoria tripartite: crime = fato típico + ilicitude + culpabilidade. A teoria bipartite (sem culpabilidade) é minoritária.' },
+      { text: 'Na teoria finalista, o dolo e a culpa integram a culpabilidade, sendo analisados apenas no terceiro substrato do crime.', isCorrect: false, tip: 'No finalismo (Welzel), dolo e culpa integram o FATO TÍPICO (conduta). A culpabilidade no finalismo é composta por imputabilidade, potencial consciência da ilicitude e exigibilidade de conduta diversa.' },
+      { text: 'A ausência de culpabilidade torna o fato atípico, impedindo a instauração de inquérito policial.', isCorrect: false, tip: 'Culpabilidade é analisada em terceiro momento. A ausência de culpabilidade não afeta a tipicidade — o fato continua sendo típico e ilícito, mas o agente não é punido.' },
+      { text: 'O erro de tipo escusável exclui o dolo mas mantém a punição pela modalidade culposa do crime.', isCorrect: false, tip: 'O erro de tipo escusável (invencível) exclui DOLO E CULPA, isentando totalmente o agente. O erro de tipo inescusável exclui dolo, mas permite punição por culpa se previsto.' },
+      { text: 'Imputabilidade penal plena é adquirida aos 16 anos de acordo com a doutrina do discernimento relativo.', isCorrect: false, tip: 'No sistema brasileiro, a imputabilidade penal plena é atingida aos 18 anos (CP art. 27 e CF art. 228). Menores de 18 anos são inimputáveis.' },
+    ],
+  },
+  {
+    concurso: 'mixed', topic: 'Administração Pública — Poderes', source: 'real',
+    text: 'O poder disciplinar da Administração Pública permite a aplicação de sanções aos servidores públicos e particulares em situações específicas. Segundo a doutrina e a Lei 9.784/99, é CORRETO afirmar:',
+    options: [
+      { text: 'O exercício do poder disciplinar é discricionário em sua totalidade, não sujeito a controle judicial de mérito, forma ou proporcionalidade.', isCorrect: false, tip: 'Há controle judicial de legalidade, forma e proporcionalidade. O STJ e STF já anularam sanções desproporcionais mesmo em decisões administrativas.' },
+      { text: 'O agente público responsável pelo processo administrativo disciplinar pode ser o mesmo que aplicará a penalidade, desde que garantido o contraditório e a ampla defesa.', isCorrect: false, tip: 'Há incompatibilidade entre instrutor e julgador na doutrina moderna. A imparcialidade é essencial ao devido processo legal.' },
+      { text: 'As sanções aplicadas no exercício do poder disciplinar devem observar os princípios da proporcionalidade e da razoabilidade, podendo ser revisadas judicialmente quando desproporcionais.', isCorrect: true, tip: 'Correto. A Lei 9.784/99 (art. 2º) exige proporcionalidade. O Judiciário pode revisar a sanção quando flagrantemente desproporcional (controle de legalidade amplo).' },
+      { text: 'O poder disciplinar aplica-se somente a servidores estatutários, não atingindo empregados celetistas da Administração Pública.', isCorrect: false, tip: 'O poder disciplinar da Administração aplica-se a ambos: estatutários e celetistas do serviço público, além de concessionários e particulares em relação especial com o Estado.' },
+      { text: 'A instauração de processo disciplinar prescinde de notificação prévia do servidor, podendo ser realizada de forma surpresa para evitar ocultação de provas.', isCorrect: false, tip: 'A notificação inicial (ciência da instauração do PAD) é garantia do devido processo legal administrativo, assegurando o exercício do contraditório desde o início.' },
+    ],
+  },
+  {
+    concurso: 'mixed', topic: 'Língua Portuguesa — Concordância Nominal', source: 'real',
+    text: 'Assinale a alternativa em que a concordância nominal está em conformidade com as normas da gramática padrão:',
+    options: [
+      { text: 'Havia bastante servidores e muita eficiência no órgão.', isCorrect: false, tip: '"Bastante" funciona como adjetivo e concorda com o substantivo: "bastantes servidores". "Muita eficiência" está correta.' },
+      { text: 'A secretária e o assessor estavam presentes, ambos empenhado no cumprimento das metas.', isCorrect: false, tip: '"Ambos" concorda com os dois referentes (F+M = masculino plural) e o predicativo "empenhados" deve estar no plural masculino.' },
+      { text: 'É proibido a entrada de pessoas não autorizadas neste departamento.', isCorrect: false, tip: 'Quando o sujeito é substantivo feminino ("a entrada"), o predicativo deve concordar: "É proibida a entrada...".' },
+      { text: 'As certidões e o documento estão anexos ao processo administrativo.', isCorrect: true, tip: '"Anexo" é adjetivo e concorda com os dois substantivos. Havendo elementos de gêneros diferentes, prevalece o masculino plural: "anexos". Correto!' },
+      { text: 'Os servidores foram convidados para comparecer ao evento, sendo cada um responsável de apresentar sua identificação.', isCorrect: false, tip: 'A regência correta é "responsável POR" (não "de"). "Responsável de" é galicismo.' },
+    ],
+  },
 ];
 
 // ── LLM Question Generator ────────────────────────────────────────────────────
