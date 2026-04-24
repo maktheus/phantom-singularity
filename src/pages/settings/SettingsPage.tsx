@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Moon, Sun, Volume2, VolumeX, Trash2, Info, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Volume2, VolumeX, Trash2, Info, RotateCcw, Trophy, Flame, Swords } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTheme } from '../../hooks/useTheme';
 import type { Theme } from '../../hooks/useTheme';
@@ -11,7 +11,8 @@ export default function SettingsPage() {
   const t = useTheme();
   const theme = useAppStore(s => s.theme);
   const toggleTheme = useAppStore(s => s.toggleTheme);
-  const [sound, setSound] = useState(true);
+  const soundEnabled = useAppStore(s => s.soundEnabled);
+  const toggleSound = useAppStore(s => s.toggleSound);
   const [confirmReset, setConfirmReset] = useState(false);
   const respawn = useAppStore(s => s.respawn);
   const resetOnboarding = useAppStore(s => s.resetOnboarding);
@@ -22,10 +23,11 @@ export default function SettingsPage() {
     if (!confirmReset) { setConfirmReset(true); return; }
     respawn();
     setConfirmReset(false);
+    navigate('/home');
   };
 
   return (
-    <div style={{ minHeight: '100dvh', backgroundColor: t.bg, color: t.text, paddingBottom: 40 }}>
+    <div style={{ minHeight: '100dvh', backgroundColor: t.bg, color: t.text, paddingBottom: 48 }}>
       {/* Header */}
       <div style={{
         padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12,
@@ -44,10 +46,10 @@ export default function SettingsPage() {
         <h1 style={{ fontWeight: 900, fontSize: '1.2rem', flex: 1, margin: 0 }}>⚙️ Configurações</h1>
       </div>
 
-      <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        {/* Theme toggle */}
-        <SectionCard t={t}>
+        {/* ── Aparência ── */}
+        <Section label="Aparência" t={t}>
           <SectionRow
             icon={isDark ? <Moon size={18} color="#818CF8" /> : <Sun size={18} color="#FBBF24" />}
             label={isDark ? 'Modo Escuro' : 'Modo Claro'}
@@ -55,21 +57,21 @@ export default function SettingsPage() {
             t={t}
             right={<ThemeToggle isDark={isDark} onToggle={toggleTheme} />}
           />
-        </SectionCard>
+        </Section>
 
-        {/* Sound toggle */}
-        <SectionCard t={t}>
+        {/* ── Áudio ── */}
+        <Section label="Áudio" t={t}>
           <SectionRow
-            icon={sound ? <Volume2 size={18} color="#22C55E" /> : <VolumeX size={18} color="#475569" />}
+            icon={soundEnabled ? <Volume2 size={18} color="#22C55E" /> : <VolumeX size={18} color="#475569" />}
             label="Sons e Efeitos"
-            sub="Efeitos de acerto e erro"
+            sub="Efeitos de acerto, erro e level up"
             t={t}
-            right={<SimpleToggle on={sound} onToggle={() => setSound(s => !s)} color="#22C55E" />}
+            right={<SimpleToggle on={soundEnabled} onToggle={toggleSound} color="#22C55E" />}
           />
-        </SectionCard>
+        </Section>
 
-        {/* Reset */}
-        <SectionCard t={t}>
+        {/* ── Dados da Run ── */}
+        <Section label="Dados da Run" t={t}>
           <SectionRow
             icon={<Trash2 size={18} color={confirmReset ? '#EF4444' : '#64748B'} />}
             label={confirmReset ? '⚠️ Confirmar reset?' : 'Resetar Run Atual'}
@@ -89,10 +91,7 @@ export default function SettingsPage() {
               </motion.button>
             }
           />
-        </SectionCard>
-
-        {/* Reset Onboarding */}
-        <SectionCard t={t}>
+          <Divider t={t} />
           <SectionRow
             icon={<RotateCcw size={18} color="#8B5CF6" />}
             label="Ver Tutorial Novamente"
@@ -102,7 +101,6 @@ export default function SettingsPage() {
               <motion.button whileTap={{ scale: 0.94 }}
                 onClick={() => {
                   resetOnboarding();
-                  // Also clear any cached value in localStorage so persist picks up the reset
                   try {
                     const raw = localStorage.getItem('phantom-rpg-v3-save');
                     if (raw) {
@@ -122,45 +120,59 @@ export default function SettingsPage() {
               </motion.button>
             }
           />
-        </SectionCard>
+        </Section>
 
-        {/* About */}
-        <SectionCard t={t}>
+        {/* ── Sobre ── */}
+        <Section label="Sobre" t={t}>
           <SectionRow
             icon={<Info size={18} color="#3B82F6" />}
-            label="Sobre o App"
-            sub="Phantom Singularity v1.0"
+            label="Phantom Singularity"
+            sub="Versão 1.0.0"
             t={t}
             right={<span style={{ fontSize: '0.75rem', color: t.textMuted, fontWeight: 700 }}>v1.0.0</span>}
           />
-        </SectionCard>
+        </Section>
 
-        {/* Stats */}
-        <div style={{
-          padding: '16px', borderRadius: 16,
-          background: t.bgCard, border: `1px solid ${t.borderStr}`,
-          marginTop: 8,
-        }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 900, color: t.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>
+        {/* ── Sua Jornada ── */}
+        <div>
+          <div style={{ fontSize: '0.68rem', fontWeight: 900, color: t.textMuted, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10, paddingLeft: 4 }}>
             Sua Jornada
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <StatMini icon="📚" label="Questões" storeKey="totalQuestionsAnswered" t={t} />
-            <StatMini icon="💀" label="Kills" storeKey="killCount" t={t} />
-            <StatMini icon="🪙" label="Ouro Total" storeKey="gold" t={t} />
+          <div style={{
+            padding: '16px', borderRadius: 16,
+            background: t.bgCard, border: `1px solid ${t.borderStr}`,
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <StatMini icon="📚" label="Questões" storeKey="totalQuestionsAnswered" t={t} />
+              <StatMini icon="💀" label="Kills" storeKey="killCount" t={t} />
+              <StatMini icon="🪙" label="Ouro Total" storeKey="gold" t={t} />
+              <StatMini icon="🏃" label="Runs Totais" storeKey="totalRuns" t={t} />
+              <StatMini icon={<Trophy size={18} color="#FBBF24" />} label="Melhor Nível" storeKey="bestLevel" t={t} />
+              <StatMini icon={<Flame size={18} color="#F97316" />} label="Streak Diário" storeKey="dailyStreak" t={t} />
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   );
 }
 
-function SectionCard({ children, t }: { children: React.ReactNode; t: Theme }) {
+function Section({ label, children, t }: { label: string; children: React.ReactNode; t: Theme }) {
   return (
-    <div style={{ background: t.bgCard, borderRadius: 16, border: `1px solid ${t.borderStr}`, overflow: 'hidden' }}>
-      {children}
+    <div>
+      <div style={{ fontSize: '0.68rem', fontWeight: 900, color: t.textMuted, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8, paddingLeft: 4 }}>
+        {label}
+      </div>
+      <div style={{ background: t.bgCard, borderRadius: 16, border: `1px solid ${t.borderStr}`, overflow: 'hidden' }}>
+        {children}
+      </div>
     </div>
   );
+}
+
+function Divider({ t }: { t: Theme }) {
+  return <div style={{ height: 1, backgroundColor: t.borderStr, marginLeft: 68 }} />;
 }
 
 function SectionRow({ icon, label, sub, right, t }: {
@@ -222,14 +234,17 @@ function SimpleToggle({ on, onToggle, color }: { on: boolean; onToggle: () => vo
   );
 }
 
+type StatKey = 'totalQuestionsAnswered' | 'killCount' | 'gold' | 'totalRuns' | 'bestLevel' | 'dailyStreak';
+
 function StatMini({ icon, label, storeKey, t }: {
-  icon: string; label: string; storeKey: 'totalQuestionsAnswered' | 'killCount' | 'gold';
+  icon: React.ReactNode; label: string; storeKey: StatKey;
   t: Theme;
 }) {
   const val = useAppStore(s => s[storeKey]);
+  const isNode = typeof icon !== 'string';
   return (
     <div style={{ padding: '12px', background: t.bgSub, borderRadius: 12, border: `1px solid ${t.borderStr}`, textAlign: 'center' }}>
-      <div style={{ fontSize: '1.4rem', marginBottom: 4 }}>{icon}</div>
+      <div style={{ fontSize: isNode ? undefined : '1.4rem', marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 28 }}>{icon}</div>
       <div style={{ fontWeight: 900, fontSize: '1rem', color: t.text }}>{val}</div>
       <div style={{ fontSize: '0.62rem', color: t.textMuted, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
     </div>

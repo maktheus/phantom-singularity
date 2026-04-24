@@ -1,11 +1,170 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Zap, BookOpen, Flame } from 'lucide-react';
+import { ArrowLeft, Zap, BookOpen, Flame, Pause, Play, LogOut, Volume2, VolumeX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore, powerUpStackCost } from '../../store/useAppStore';
 import type { RunPowerUp, RunItem, BuildType } from '../../store/useAppStore';
 import { getRealQuestions, shuffleQuestions, REAL_QUESTIONS } from '../../services/questionEngine';
 import '../../pixelart.css';
+
+// ─── Pause Modal ─────────────────────────────────────────────────────────────
+function PauseModal({ onResume, onAbandon, runKills, gold, enemyLevel, soundEnabled, onToggleSound }: {
+  onResume: () => void;
+  onAbandon: () => void;
+  runKills: number;
+  gold: number;
+  enemyLevel: number;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
+}) {
+  const [confirmAbandon, setConfirmAbandon] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 300,
+        backgroundColor: 'rgba(0,0,0,0.75)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '0 24px',
+      }}
+    >
+      <motion.div
+        initial={{ scale: 0.88, y: 24, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.88, y: 24, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+        style={{
+          width: '100%', maxWidth: 380,
+          background: 'linear-gradient(160deg, #111827 0%, #0A0F1E 100%)',
+          borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          padding: '20px 24px 16px',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Pause size={16} color="#818CF8" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 900, fontSize: '1rem', color: '#F1F5F9' }}>Pausado</div>
+              <div style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 700 }}>Run em andamento</div>
+            </div>
+          </div>
+          {/* Sound toggle */}
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onToggleSound} style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: soundEnabled ? 'rgba(34,197,94,0.12)' : 'rgba(71,85,105,0.15)',
+            border: `1px solid ${soundEnabled ? 'rgba(34,197,94,0.3)' : 'rgba(71,85,105,0.3)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+          }}>
+            {soundEnabled
+              ? <Volume2 size={16} color="#22C55E" />
+              : <VolumeX size={16} color="#475569" />}
+          </motion.button>
+        </div>
+
+        {/* Run stats */}
+        <div style={{ padding: '16px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+          {[
+            { icon: '⚔️', label: 'Nível', value: enemyLevel },
+            { icon: '💀', label: 'Kills', value: runKills },
+            { icon: '🪙', label: 'Ouro', value: gold },
+          ].map(({ icon, label, value }) => (
+            <div key={label} style={{
+              textAlign: 'center', padding: '12px 8px',
+              background: 'rgba(255,255,255,0.03)', borderRadius: 12,
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div style={{ fontSize: '1.3rem', marginBottom: 4 }}>{icon}</div>
+              <div style={{ fontWeight: 900, fontSize: '1rem', color: '#F1F5F9' }}>{value}</div>
+              <div style={{ fontSize: '0.6rem', color: '#475569', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div style={{ padding: '0 24px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Resume */}
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={onResume}
+            style={{
+              width: '100%', padding: '15px',
+              background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+              color: 'white', borderRadius: 14, border: 'none',
+              fontWeight: 900, fontSize: '1rem', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: '0 4px 0 rgba(49,46,129,0.8)',
+            }}
+          >
+            <Play size={18} /> Continuar Run
+          </motion.button>
+
+          {/* Abandon */}
+          {!confirmAbandon ? (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setConfirmAbandon(true)}
+              style={{
+                width: '100%', padding: '13px',
+                background: 'rgba(239,68,68,0.08)',
+                color: '#F87171', borderRadius: 14,
+                border: '1px solid rgba(239,68,68,0.2)',
+                fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <LogOut size={16} /> Abandonar Run
+            </motion.button>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setConfirmAbandon(false)}
+                style={{
+                  flex: 1, padding: '13px',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#94A3B8', borderRadius: 14,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={onAbandon}
+                style={{
+                  flex: 1, padding: '13px',
+                  background: 'linear-gradient(135deg,#EF4444,#991B1B)',
+                  color: 'white', borderRadius: 14, border: 'none',
+                  fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer',
+                }}
+              >
+                ☠️ Confirmar
+              </motion.button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 // ─── Tutorial Hint (non-blocking overlay) ────────────────────────────────────
 function TutorialHint({ text, emoji, visible }: { text: string; emoji: string; visible: boolean }) {
@@ -51,6 +210,7 @@ const MOD_LABEL: Record<string, { label: string; icon: string; color: string }> 
 
 // ─── Sound Effects ────────────────────────────────────────────────────────────
 function playSound(type: 'hit' | 'crit' | 'damage' | 'death' | 'gold' | 'levelup') {
+  if (!useAppStore.getState().soundEnabled) return;
   try {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
     const ctx = new AC(); const o = ctx.createOscillator(); const g = ctx.createGain();
@@ -993,8 +1153,11 @@ export default function StudySwipeMode() {
     lastEvolvedItem, confirmEvolution,
     isTutorial, tutorialStep, advanceTutorial,
     runPowerUpCounts,
+    soundEnabled, toggleSound,
+    endRun, runKills,
   } = useAppStore();
 
+  const [isPaused, setIsPaused]       = useState(false);
   const [qIndex, setQIndex]           = useState(0);
   const [questionRevealed, setQuestionRevealed] = useState(false);
   const [peekModalOpen, setPeekModalOpen] = useState(false); // re-open preview after reveal
@@ -1197,6 +1360,25 @@ export default function StudySwipeMode() {
       {/* Screen flash */}
       <AnimatePresence>{flashColor && <ScreenFlash key={flashColor + Date.now()} color={flashColor} />}</AnimatePresence>
 
+      {/* Pause Modal */}
+      <AnimatePresence>
+        {isPaused && (
+          <PauseModal
+            onResume={() => setIsPaused(false)}
+            onAbandon={async () => {
+              setIsPaused(false);
+              await endRun('abandoned');
+              navigate('/home');
+            }}
+            runKills={runKills}
+            gold={gold}
+            enemyLevel={enemy.level}
+            soundEnabled={soundEnabled}
+            onToggleSound={toggleSound}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Modals */}
       <AnimatePresence>{pendingRunUpgrades && !pendingItemDrop && <PowerUpModal upgrades={pendingRunUpgrades} playerBuild={player.build} onChoose={(up) => { chooseRunUpgrade(up); if (isTutorial && tutorialStep >= 2) { setTimeout(() => advanceTutorial(), 400); } }} onSkip={skipRunUpgrade} gold={gold} runPowerUpCounts={runPowerUpCounts} />}</AnimatePresence>
       <AnimatePresence>{pendingItemDrop && !lastEvolvedItem && <ItemChestModal onPick={pickItem} onSkip={dismissItemDrop} ownedIds={runItems.map(x => x.id)} runItems={runItems} />}</AnimatePresence>
@@ -1210,13 +1392,14 @@ export default function StudySwipeMode() {
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         flexShrink: 0, zIndex: 10,
       }}>
-        {/* Back */}
-        <button onClick={() => navigate('/home')} style={{
+        {/* Pause / Back */}
+        <button onClick={() => setIsPaused(true)} style={{
           display: 'flex', alignItems: 'center', gap: 6,
           color: '#475569', fontWeight: 800, fontSize: '0.85rem',
           padding: '6px 10px', borderRadius: 10, backgroundColor: '#0F172A', border: '1px solid #1E293B',
+          cursor: 'pointer',
         }}>
-          <ArrowLeft size={15} /> Base
+          <Pause size={15} /> Pausar
         </button>
 
         {/* Center: streak + ai status */}

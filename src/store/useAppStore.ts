@@ -213,8 +213,14 @@ interface GameState {
   runId: string | null;
   currentQuestions: any[]; // Questão vinda do back
 
-  // Theming
+  // Theming + audio
   theme: 'dark' | 'light';
+  soundEnabled: boolean;
+
+  // Lifetime stats
+  totalRuns: number;
+  bestLevel: number;
+
   // Cosmetic inventory (persists between runs)
   cosmeticInventory: CosmeticItem[];
   equippedCosmetics: { hat: string|null; weapon: string|null; armor: string|null; amulet: string|null };
@@ -251,6 +257,7 @@ interface GameState {
   incrementQuestions: () => void;
   setConcurso: (c: ConcursoType) => void;
   toggleTheme: () => void;
+  toggleSound: () => void;
   addCosmeticItem: (item: CosmeticItem) => void;
   equipCosmetic: (itemId: string) => void;
   unequipCosmetic: (slot: CosmeticSlot) => void;
@@ -458,6 +465,9 @@ export const useAppStore = create<GameState>()(
       runId: null,
       currentQuestions: [],
       theme: 'dark' as 'dark' | 'light',
+      soundEnabled: true,
+      totalRuns: 0,
+      bestLevel: 0,
       cosmeticInventory: [],
       equippedCosmetics: { hat: null, weapon: null, armor: null, amulet: null },
       pendingCosmeticChest: false,
@@ -647,7 +657,7 @@ export const useAppStore = create<GameState>()(
       },
 
       endRun: async (reason) => {
-        const { runId } = get();
+        const { runId, enemy, bestLevel, totalRuns } = get();
         if (runId) {
           try {
             const { runApi } = await import('../services/api');
@@ -656,7 +666,12 @@ export const useAppStore = create<GameState>()(
             console.error("Failed to end run on backend", e);
           }
         }
-        set({ runId: null, isGameOver: true });
+        set({
+          runId: null,
+          isGameOver: true,
+          totalRuns: totalRuns + 1,
+          bestLevel: Math.max(bestLevel, enemy.level),
+        });
       },
 
       takeDamage: (dmg) => {
@@ -875,6 +890,7 @@ export const useAppStore = create<GameState>()(
       endTutorial: () => set({ isTutorial: false }),
 
       toggleTheme: () => set(s => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+      toggleSound: () => set(s => ({ soundEnabled: !s.soundEnabled })),
 
       addCosmeticItem: (item) => set(s => ({
         cosmeticInventory: [...s.cosmeticInventory, item],
