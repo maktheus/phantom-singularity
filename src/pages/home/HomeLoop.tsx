@@ -468,13 +468,13 @@ function PremiumBanner({ onUpgrade }: { onUpgrade: () => void }) {
 function MetaUpgradesSection({ upgrades, gold, onBuy }: {
   upgrades: PermanentUpgrade[];
   gold: number;
-  onBuy: (id: string) => void;
+  onBuy: (id: string) => boolean;
 }) {
   const [justBought, setJustBought] = useState<string | null>(null);
 
   const handleBuy = (u: PermanentUpgrade) => {
     const ok = onBuy(u.id);
-    if (ok !== false) {
+    if (ok) {
       setJustBought(u.id);
       setTimeout(() => setJustBought(null), 800);
     }
