@@ -1,9 +1,9 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Zap, BookOpen, Flame, Pause, Play, LogOut, Volume2, VolumeX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore, powerUpStackCost } from '../../store/useAppStore';
-import type { RunPowerUp, RunItem, BuildType } from '../../store/useAppStore';
+import type { RunPowerUp, RunItem, BuildType, EnemyState } from '../../store/useAppStore';
 import { getRealQuestions, shuffleQuestions, REAL_QUESTIONS } from '../../services/questionEngine';
 import '../../pixelart.css';
 
@@ -473,13 +473,17 @@ function PowerUpModal({ upgrades, playerBuild, onChoose, onSkip, gold, runPowerU
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-          {upgrades.map(u => {
+          {upgrades.map((u, idx) => {
             const isClassExclusive = !!u.forClass;
             const count = runPowerUpCounts[u.id] ?? 0;
             const cost = powerUpStackCost(u.rarity, count);
             const canAfford = cost === 0 || gold >= cost;
             return (
-              <motion.button key={u.id} whileTap={canAfford ? { scale: 0.97 } : {}} onClick={() => canAfford && onChoose(u)}
+              <motion.button key={u.id}
+                initial={{ opacity: 0, x: -24, scale: 0.96 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 340, damping: 26, delay: idx * 0.07 }}
+                whileTap={canAfford ? { scale: 0.97 } : {}} onClick={() => canAfford && onChoose(u)}
                 disabled={!canAfford}
                 style={{
                   padding: '13px 16px', borderRadius: 14,
@@ -882,6 +886,138 @@ function EvolutionRevealModal({ itemId, onConfirm }: { itemId: string; onConfirm
   );
 }
 
+// ─── Boss Entrance Cutscene ───────────────────────────────────────────────────
+function BossEntranceModal({ enemy, onDismiss }: { enemy: EnemyState; onDismiss: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 3000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+
+  // Particle ring
+  const PARTICLES = Array.from({ length: 12 }, (_, i) => ({
+    angle: i * 30,
+    radius: 110 + (i % 3) * 28,
+    delay: 0.4 + i * 0.06,
+  }));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.4 } }}
+      onClick={onDismiss}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 260,
+        background: 'radial-gradient(ellipse at 50% 40%, #2D0000 0%, #0A0000 50%, #000 100%)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', overflow: 'hidden',
+        cursor: 'pointer',
+      }}>
+
+      {/* Animated danger stripes */}
+      <motion.div
+        animate={{ backgroundPosition: ['0px 0px', '56px 56px'] }}
+        transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
+        style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: 'repeating-linear-gradient(45deg, rgba(239,68,68,0.06) 0, rgba(239,68,68,0.06) 14px, transparent 14px, transparent 28px)',
+          backgroundSize: '56px 56px',
+        }} />
+
+      {/* Red vignette pulse */}
+      <motion.div
+        animate={{ opacity: [0.25, 0.55, 0.25] }}
+        transition={{ repeat: Infinity, duration: 0.9 }}
+        style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(220,38,38,0.4) 100%)',
+        }} />
+
+      {/* Particle ring */}
+      {PARTICLES.map((p, i) => (
+        <motion.div key={i}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: [0, 1, 0], scale: [0, 1.3, 0],
+            x: Math.cos(p.angle * Math.PI / 180) * p.radius,
+            y: Math.sin(p.angle * Math.PI / 180) * p.radius,
+          }}
+          transition={{ delay: p.delay, duration: 1.2, repeat: Infinity, repeatDelay: 0.8 }}
+          style={{ position: 'absolute', fontSize: '1rem', color: '#EF4444', pointerEvents: 'none' }}>
+          ✦
+        </motion.div>
+      ))}
+
+      {/* WARNING flash label */}
+      <motion.div
+        initial={{ scale: 2.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 280, damping: 18 }}
+        style={{ marginBottom: 20, position: 'relative', zIndex: 2 }}>
+        <div style={{
+          fontSize: '0.72rem', fontWeight: 900, letterSpacing: 7,
+          color: '#EF4444', textTransform: 'uppercase',
+          textShadow: '0 0 30px rgba(239,68,68,0.9)',
+        }}>
+          ⚠ CHEFE APARECEU ⚠
+        </div>
+      </motion.div>
+
+      {/* Boss emoji */}
+      <motion.div
+        initial={{ y: -120, opacity: 0, scale: 0.5 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        transition={{ delay: 0.28, type: 'spring', stiffness: 180, damping: 14 }}
+        style={{ marginBottom: 22, position: 'relative', zIndex: 2 }}>
+        <motion.div
+          animate={{ scale: [1, 1.12, 0.96, 1.06, 1] }}
+          transition={{ repeat: Infinity, duration: 1.6, delay: 0.5 }}
+          style={{
+            fontSize: '8rem', lineHeight: 1,
+            filter: 'drop-shadow(0 0 48px rgba(239,68,68,0.85))',
+          }}>
+          {enemy.emoji}
+        </motion.div>
+      </motion.div>
+
+      {/* Boss name + level */}
+      <motion.div
+        initial={{ y: 30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.48, type: 'spring' }}
+        style={{ position: 'relative', zIndex: 2 }}>
+        <div style={{
+          fontSize: '1.7rem', fontWeight: 900, color: '#FBBF24',
+          marginBottom: 8, textShadow: '0 0 24px rgba(251,191,36,0.7)',
+          letterSpacing: -0.5,
+        }}>
+          {enemy.name}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <span style={{
+            padding: '5px 14px', borderRadius: 999,
+            background: 'rgba(239,68,68,0.18)', border: '1.5px solid rgba(239,68,68,0.5)',
+            fontSize: '0.78rem', fontWeight: 900, color: '#FCA5A5', letterSpacing: 1,
+          }}>
+            👑 CHEFE · Lv.{enemy.level}
+          </span>
+        </div>
+      </motion.div>
+
+      {/* Tap to dismiss */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.7, 0] }}
+        transition={{ delay: 1.6, repeat: Infinity, duration: 1.3 }}
+        style={{ position: 'absolute', bottom: 52, fontSize: '0.7rem',
+          color: '#475569', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
+          zIndex: 2 }}>
+        toque para continuar
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── Build Strip ─────────────────────────────────────────────────────────────
 // Compact item bar shown during combat: shows items + evolution readiness
 function BuildStrip({ runItems, onPress }: { runItems: RunItem[]; onPress: () => void }) {
@@ -1175,12 +1311,27 @@ export default function StudySwipeMode() {
   const [questionQueue, setQuestionQueue] = useState<any[]>([]);
   const [aiStatus, setAiStatus]       = useState<'idle' | 'ok' | 'offline'>('idle');
   const [shownHint, setShownHint]     = useState<number>(-1); // last hint step shown
+  const [showBossEntrance, setShowBossEntrance] = useState(false);
+  const prevEnemyLevel = useRef(enemy.level);
+  const prevEnemyModifier = useRef(enemy.modifier);
 
   // Reset question preview on each new question
   useEffect(() => { setQuestionRevealed(false); setPeekModalOpen(false); }, [qIndex]);
 
   // Reset first-hit tracker when a new enemy spawns (enemy.level changes)
   useEffect(() => { setIsFirstHitThisEnemy(true); }, [enemy.level]);
+
+  // Boss entrance: fire when enemy changes to boss (level or modifier changed)
+  useEffect(() => {
+    const levelChanged = enemy.level !== prevEnemyLevel.current;
+    const isBossNow = enemy.modifier === 'boss';
+    const wasBoss = prevEnemyModifier.current === 'boss';
+    if (levelChanged && isBossNow && !wasBoss) {
+      setShowBossEntrance(true);
+    }
+    prevEnemyLevel.current = enemy.level;
+    prevEnemyModifier.current = enemy.modifier;
+  }, [enemy.level, enemy.modifier]);
 
   // Tutorial hint timing
   useEffect(() => {
@@ -1383,6 +1534,7 @@ export default function StudySwipeMode() {
       <AnimatePresence>{pendingRunUpgrades && !pendingItemDrop && <PowerUpModal upgrades={pendingRunUpgrades} playerBuild={player.build} onChoose={(up) => { chooseRunUpgrade(up); if (isTutorial && tutorialStep >= 2) { setTimeout(() => advanceTutorial(), 400); } }} onSkip={skipRunUpgrade} gold={gold} runPowerUpCounts={runPowerUpCounts} />}</AnimatePresence>
       <AnimatePresence>{pendingItemDrop && !lastEvolvedItem && <ItemChestModal onPick={pickItem} onSkip={dismissItemDrop} ownedIds={runItems.map(x => x.id)} runItems={runItems} />}</AnimatePresence>
       <AnimatePresence>{lastEvolvedItem && <EvolutionRevealModal key={lastEvolvedItem} itemId={lastEvolvedItem} onConfirm={confirmEvolution} />}</AnimatePresence>
+      <AnimatePresence>{showBossEntrance && <BossEntranceModal key={`boss-${enemy.level}`} enemy={enemy} onDismiss={() => setShowBossEntrance(false)} />}</AnimatePresence>
 
       {/* ── Top Bar ── */}
       <div style={{
@@ -1730,53 +1882,124 @@ export default function StudySwipeMode() {
       {/* ── Game Over Screen ── */}
       <AnimatePresence>
         {isGameOver && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             style={{
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)',
-              display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', zIndex: 200,
+              position: 'fixed', inset: 0, zIndex: 200,
+              background: 'radial-gradient(ellipse at 50% 30%, #2D0808 0%, #0A0000 55%, #000 100%)',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
             }}>
+
+            {/* Animated red vignette pulse */}
             <motion.div
-              initial={{ y: 500 }} animate={{ y: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+              animate={{ opacity: [0.2, 0.45, 0.2] }}
+              transition={{ repeat: Infinity, duration: 2.4 }}
               style={{
-                padding: '32px 24px', paddingBottom: 'max(32px, env(safe-area-inset-bottom))',
-                background: 'linear-gradient(180deg, #0F172A 0%, #0A0F1E 100%)',
-                borderRadius: '28px 28px 0 0',
-                border: '1px solid rgba(239,68,68,0.2)',
-                textAlign: 'center',
-              }}>
+                position: 'absolute', inset: 0, pointerEvents: 'none',
+                background: 'radial-gradient(ellipse at center, transparent 40%, rgba(185,28,28,0.5) 100%)',
+              }} />
+
+            {/* Drip lines */}
+            {[15, 32, 52, 68, 84].map((l, i) => (
+              <motion.div key={i}
+                initial={{ y: -40, opacity: 0 }}
+                animate={{ y: [0, 30 + i * 20, 0], opacity: [0, 0.5, 0] }}
+                transition={{ delay: 0.6 + i * 0.18, repeat: Infinity, duration: 2.5 + i * 0.4 }}
+                style={{
+                  position: 'absolute', top: 0, left: `${l}%`,
+                  width: 2, height: 40 + i * 14, borderRadius: '0 0 4px 4px',
+                  background: 'linear-gradient(to bottom, #DC2626, transparent)',
+                  pointerEvents: 'none',
+                }} />
+            ))}
+
+            {/* Skull */}
+            <motion.div
+              initial={{ y: -200, scale: 0.4, rotate: -20 }}
+              animate={{ y: 0, scale: 1, rotate: 0 }}
+              transition={{ delay: 0.15, type: 'spring', stiffness: 160, damping: 14 }}
+              style={{ marginBottom: 8, position: 'relative', zIndex: 2 }}>
               <motion.div
-                animate={{ rotate: [0,-12,12,-8,0] }} transition={{ repeat: Infinity, duration: 2.5 }}
-                style={{ fontSize: '5rem', marginBottom: 16 }}>💀</motion.div>
-              <h1 className="pixel-text" style={{ fontSize: '1.8rem', fontWeight: 900, color: '#EF4444', marginBottom: 8, letterSpacing: 2 }}>
-                GAME OVER
-              </h1>
-              <p style={{ color: '#475569', fontSize: '0.9rem', marginBottom: 6, fontWeight: 700 }}>
-                Derrotado por: <span style={{ color: '#E2E8F0' }}>{enemy.emoji} {enemy.name} Lv.{enemy.level}</span>
-              </p>
+                animate={{ rotate: [0, -8, 8, -5, 5, 0] }}
+                transition={{ repeat: Infinity, duration: 3, delay: 0.8 }}
+                style={{ fontSize: '6.5rem', lineHeight: 1,
+                  filter: 'drop-shadow(0 0 40px rgba(220,38,38,0.7)) drop-shadow(0 6px 0 rgba(0,0,0,0.8))',
+                }}>
+                💀
+              </motion.div>
+            </motion.div>
+
+            {/* GAME OVER text */}
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.45, type: 'spring', stiffness: 260, damping: 18 }}
+              style={{ marginBottom: 6, position: 'relative', zIndex: 2, textAlign: 'center' }}>
               <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                backgroundColor: '#1C0A00', border: '1.5px solid rgba(251,191,36,0.3)',
-                borderRadius: 12, padding: '10px 20px', margin: '16px 0 28px',
+                fontSize: '2.4rem', fontWeight: 900, color: '#EF4444',
+                letterSpacing: 4, textTransform: 'uppercase',
+                textShadow: '0 0 30px rgba(239,68,68,0.7), 0 4px 0 #7F1D1D',
               }}>
-                <span style={{ fontSize: '1.3rem' }}>🪙</span>
-                <span style={{ fontWeight: 900, fontSize: '1.3rem', color: '#FBBF24' }}>{gold}</span>
-                <span style={{ color: '#92400E', fontSize: '0.8rem', fontWeight: 700 }}>de ouro preservado</span>
+                GAME OVER
               </div>
+            </motion.div>
 
-              {/* Stats summary */}
-              <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
-                {[
-                  { label: 'Kill streak', val: streak, icon: '🔥' },
-                  { label: 'Nível atingido', val: `Lv.${enemy.level}`, icon: '⚔️' },
-                ].map(s => (
-                  <div key={s.label} style={{ flex: 1, backgroundColor: '#0F172A', borderRadius: 12, padding: '12px 8px', border: '1px solid #1E293B' }}>
-                    <div style={{ fontSize: '1.2rem', marginBottom: 4 }}>{s.icon}</div>
-                    <div style={{ fontWeight: 900, color: 'white', fontSize: '1.1rem' }}>{s.val}</div>
-                    <div style={{ fontSize: '0.65rem', color: '#334155', fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
+            {/* Defeated by */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              style={{ marginBottom: 24, position: 'relative', zIndex: 2, textAlign: 'center' }}>
+              <span style={{ color: '#64748B', fontSize: '0.82rem', fontWeight: 700 }}>
+                Derrotado por:{' '}
+              </span>
+              <span style={{ color: '#FCA5A5', fontWeight: 900, fontSize: '0.88rem' }}>
+                {enemy.emoji} {enemy.name} Lv.{enemy.level}
+              </span>
+            </motion.div>
 
+            {/* Stats grid */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.85 }}
+              style={{
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
+                width: '100%', maxWidth: 360, padding: '0 24px', marginBottom: 24,
+                position: 'relative', zIndex: 2,
+              }}>
+              {[
+                { icon: '💀', val: runKills, label: 'Kills nesta run', color: '#F87171' },
+                { icon: '⚔️', val: `Lv.${enemy.level}`, label: 'Nível atingido', color: '#A78BFA' },
+                { icon: '🔥', val: streak, label: 'Maior streak', color: '#FB923C' },
+                { icon: '🪙', val: gold, label: 'Ouro preservado', color: '#FBBF24' },
+              ].map((s, i) => (
+                <motion.div key={s.label}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.9 + i * 0.08, type: 'spring', stiffness: 300, damping: 22 }}
+                  style={{
+                    textAlign: 'center', padding: '14px 10px',
+                    background: 'rgba(255,255,255,0.04)',
+                    borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)',
+                    backdropFilter: 'blur(4px)',
+                  }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: 5 }}>{s.icon}</div>
+                  <div style={{ fontWeight: 900, fontSize: '1.2rem', color: s.color, lineHeight: 1 }}>{s.val}</div>
+                  <div style={{ fontSize: '0.58rem', color: '#475569', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 }}>{s.label}</div>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Action buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.2 }}
+              style={{ width: '100%', maxWidth: 360, padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 10, position: 'relative', zIndex: 2 }}>
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => {
@@ -1792,17 +2015,24 @@ export default function StudySwipeMode() {
                   background: 'linear-gradient(135deg, #3B82F6, #6D28D9)',
                   color: 'white', borderRadius: 16,
                   fontWeight: 900, fontSize: '1.05rem',
-                  boxShadow: '0 5px 0 #1e1b4b',
+                  boxShadow: '0 5px 0 #1E1B4B',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}>
                 🏕️ Voltar à Base
               </motion.button>
-
-              <button
+              <motion.button
+                whileTap={{ scale: 0.97 }}
                 onClick={() => { respawn(); setSelectedIdx(null); setQIndex(0); setCombatLog(''); }}
-                style={{ marginTop: 12, width: '100%', padding: '12px', color: '#475569', fontWeight: 800, fontSize: '0.85rem' }}>
+                style={{
+                  width: '100%', padding: '14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#64748B', borderRadius: 16,
+                  fontWeight: 800, fontSize: '0.9rem',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}>
                 🔄 Tentar novamente
-              </button>
+              </motion.button>
             </motion.div>
           </motion.div>
         )}
