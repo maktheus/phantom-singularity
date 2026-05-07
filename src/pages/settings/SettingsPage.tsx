@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Moon, Sun, Volume2, VolumeX, Trash2, Info, RotateCcw, Trophy, Flame, Swords } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Volume2, VolumeX, Trash2, Info, RotateCcw, Trophy, Flame } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTheme } from '../../hooks/useTheme';
 import type { Theme } from '../../hooks/useTheme';

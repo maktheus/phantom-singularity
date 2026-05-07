@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Zap, BookOpen, Flame, Pause, Play, LogOut, Volume2, VolumeX } from 'lucide-react';
+import { Zap, BookOpen, Flame, Pause, Play, LogOut, Volume2, VolumeX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore, powerUpStackCost } from '../../store/useAppStore';
 import type { RunPowerUp, RunItem, BuildType, EnemyState } from '../../store/useAppStore';
