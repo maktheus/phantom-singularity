@@ -886,6 +886,122 @@ function EvolutionRevealModal({ itemId, onConfirm }: { itemId: string; onConfirm
   );
 }
 
+// ─── Run Summary Modal ────────────────────────────────────────────────────────
+function RunSummaryModal({ runKills, gold, enemyLevel, reason, onGoHome }: {
+  runKills: number;
+  gold: number;
+  enemyLevel: number;
+  reason: 'death' | 'victory' | 'abandoned';
+  onGoHome: () => void;
+}) {
+  const isVictory = reason === 'victory';
+  const accentColor = isVictory ? '#22C55E' : '#6366F1';
+
+  const stats = [
+    { icon: '💀', val: runKills,        label: 'Kills',        color: '#F87171' },
+    { icon: '⚔️', val: `Lv.${enemyLevel}`, label: 'Nível',    color: '#A78BFA' },
+    { icon: '🪙', val: gold,            label: 'Ouro',         color: '#FBBF24' },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 300,
+        background: 'rgba(0,0,0,0.88)',
+        backdropFilter: 'blur(12px)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '24px',
+      }}>
+
+      <motion.div
+        initial={{ scale: 0.85, y: 40, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.85, y: 40, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+        style={{
+          width: '100%', maxWidth: 380,
+          background: 'linear-gradient(160deg, #111827 0%, #0A0F1E 100%)',
+          borderRadius: 28,
+          border: `1.5px solid ${accentColor}40`,
+          boxShadow: `0 0 60px ${accentColor}18, 0 24px 60px rgba(0,0,0,0.7)`,
+          overflow: 'hidden',
+        }}>
+
+        {/* Header */}
+        <div style={{
+          padding: '24px 24px 20px',
+          background: isVictory
+            ? 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(21,128,61,0.08))'
+            : 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(79,70,229,0.08))',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          textAlign: 'center',
+        }}>
+          <motion.div
+            initial={{ scale: 0, rotate: -30 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 280, damping: 16 }}
+            style={{ fontSize: '4rem', marginBottom: 10, lineHeight: 1 }}>
+            {isVictory ? '🏆' : '🚪'}
+          </motion.div>
+          <div style={{ fontWeight: 900, fontSize: '1.3rem', color: isVictory ? '#86EFAC' : '#A78BFA', marginBottom: 4 }}>
+            {isVictory ? 'Vitória!' : 'Run Encerrada'}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 700 }}>
+            {isVictory
+              ? 'Você completou esta run com sucesso!'
+              : 'Você voltou à base com o ouro ganho.'}
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div style={{ padding: '20px 24px', display: 'flex', gap: 10 }}>
+          {stats.map((s, i) => (
+            <motion.div key={s.label}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + i * 0.08, type: 'spring' }}
+              style={{
+                flex: 1, textAlign: 'center', padding: '14px 8px',
+                background: 'rgba(255,255,255,0.03)', borderRadius: 14,
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}>
+              <div style={{ fontSize: '1.4rem', marginBottom: 5 }}>{s.icon}</div>
+              <div style={{ fontWeight: 900, fontSize: '1.15rem', color: s.color, lineHeight: 1 }}>{s.val}</div>
+              <div style={{ fontSize: '0.58rem', color: '#334155', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 }}>{s.label}</div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div style={{ padding: '0 24px 24px' }}>
+          <motion.button
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onGoHome}
+            style={{
+              width: '100%', padding: '17px',
+              background: isVictory
+                ? 'linear-gradient(135deg, #22C55E, #15803D)'
+                : 'linear-gradient(135deg, #6366F1, #4F46E5)',
+              color: 'white', borderRadius: 16,
+              fontWeight: 900, fontSize: '1.05rem',
+              boxShadow: isVictory ? '0 5px 0 #14532D' : '0 5px 0 #312E81',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+            🏕️ Voltar à Base
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── Boss Entrance Cutscene ───────────────────────────────────────────────────
 function BossEntranceModal({ enemy, onDismiss }: { enemy: EnemyState; onDismiss: () => void }) {
   useEffect(() => {
@@ -1312,6 +1428,8 @@ export default function StudySwipeMode() {
   const [aiStatus, setAiStatus]       = useState<'idle' | 'ok' | 'offline'>('idle');
   const [shownHint, setShownHint]     = useState<number>(-1); // last hint step shown
   const [showBossEntrance, setShowBossEntrance] = useState(false);
+  const [showRunSummary, setShowRunSummary] = useState(false);
+  const [runSummaryReason, setRunSummaryReason] = useState<'death' | 'victory' | 'abandoned'>('abandoned');
   const prevEnemyLevel = useRef(enemy.level);
   const prevEnemyModifier = useRef(enemy.modifier);
 
@@ -1519,7 +1637,8 @@ export default function StudySwipeMode() {
             onAbandon={async () => {
               setIsPaused(false);
               await endRun('abandoned');
-              navigate('/home');
+              setRunSummaryReason('abandoned');
+              setShowRunSummary(true);
             }}
             runKills={runKills}
             gold={gold}
@@ -1535,6 +1654,7 @@ export default function StudySwipeMode() {
       <AnimatePresence>{pendingItemDrop && !lastEvolvedItem && <ItemChestModal onPick={pickItem} onSkip={dismissItemDrop} ownedIds={runItems.map(x => x.id)} runItems={runItems} />}</AnimatePresence>
       <AnimatePresence>{lastEvolvedItem && <EvolutionRevealModal key={lastEvolvedItem} itemId={lastEvolvedItem} onConfirm={confirmEvolution} />}</AnimatePresence>
       <AnimatePresence>{showBossEntrance && <BossEntranceModal key={`boss-${enemy.level}`} enemy={enemy} onDismiss={() => setShowBossEntrance(false)} />}</AnimatePresence>
+      <AnimatePresence>{showRunSummary && <RunSummaryModal runKills={runKills} gold={gold} enemyLevel={enemy.level} reason={runSummaryReason} onGoHome={() => { setShowRunSummary(false); navigate('/home'); }} />}</AnimatePresence>
 
       {/* ── Top Bar ── */}
       <div style={{

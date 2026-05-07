@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Share2, Repeat, Swords, Crown, Zap } from 'lucide-react';
-import { useAppStore, SHOP_BLUEPRINTS, RUN_POWERUPS } from '../../store/useAppStore';
-import type { BuildType, ShopBlueprint } from '../../store/useAppStore';
+import { useAppStore, SHOP_BLUEPRINTS, RUN_POWERUPS, permanentCost } from '../../store/useAppStore';
+import type { BuildType, ShopBlueprint, PermanentUpgrade } from '../../store/useAppStore';
 import ChestOpenModal from '../../components/ChestOpenModal';
 import type { CosmeticItem } from '../../data/cosmeticsDb';
 import '../../pixelart.css';
@@ -464,6 +464,158 @@ function PremiumBanner({ onUpgrade }: { onUpgrade: () => void }) {
   );
 }
 
+// ─── Permanent Upgrades Section ───────────────────────────────────────────────
+function MetaUpgradesSection({ upgrades, gold, onBuy }: {
+  upgrades: PermanentUpgrade[];
+  gold: number;
+  onBuy: (id: string) => void;
+}) {
+  const [justBought, setJustBought] = useState<string | null>(null);
+
+  const handleBuy = (u: PermanentUpgrade) => {
+    const ok = onBuy(u.id);
+    if (ok !== false) {
+      setJustBought(u.id);
+      setTimeout(() => setJustBought(null), 800);
+    }
+  };
+
+  return (
+    <div style={{
+      borderRadius: 20, overflow: 'hidden',
+      background: 'linear-gradient(160deg, #111827 0%, #0A0F1E 100%)',
+      border: '1px solid rgba(99,102,241,0.2)',
+      boxShadow: '0 4px 24px rgba(99,102,241,0.08)',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '12px 16px',
+        background: 'linear-gradient(90deg, rgba(99,102,241,0.15), rgba(59,130,246,0.08))',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <span style={{ fontSize: '1.1rem' }}>🏆</span>
+        <div>
+          <div style={{ fontWeight: 900, fontSize: '0.85rem', color: '#A78BFA' }}>Upgrades Permanentes</div>
+          <div style={{ fontSize: '0.62rem', color: '#334155', fontWeight: 700 }}>Persistem entre todas as runs</div>
+        </div>
+      </div>
+
+      {/* Upgrade rows */}
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {upgrades.map((u, i) => {
+          const cost = permanentCost(u);
+          const canAfford = gold >= cost;
+          const isMaxed = u.level >= u.maxLevel;
+          const isBought = justBought === u.id;
+
+          return (
+            <motion.div key={u.id}
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.06, type: 'spring', stiffness: 320, damping: 26 }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 12px', borderRadius: 14,
+                background: isMaxed
+                  ? 'rgba(34,197,94,0.06)'
+                  : isBought
+                  ? 'rgba(99,102,241,0.12)'
+                  : 'rgba(255,255,255,0.02)',
+                border: `1.5px solid ${isMaxed ? 'rgba(34,197,94,0.25)' : isBought ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.05)'}`,
+                transition: 'all 0.2s',
+              }}>
+
+              {/* Icon */}
+              <motion.div
+                animate={isBought ? { scale: [1, 1.4, 1], rotate: [0, 20, -20, 0] } : {}}
+                transition={{ duration: 0.5 }}
+                style={{
+                  width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                  background: isMaxed ? 'rgba(34,197,94,0.15)' : 'rgba(99,102,241,0.12)',
+                  border: `1px solid ${isMaxed ? 'rgba(34,197,94,0.3)' : 'rgba(99,102,241,0.2)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.3rem',
+                }}>
+                {u.emoji}
+              </motion.div>
+
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.82rem', color: isMaxed ? '#86EFAC' : '#E2E8F0' }}>
+                    {u.name}
+                  </span>
+                  {isMaxed && (
+                    <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#22C55E', background: 'rgba(34,197,94,0.15)', padding: '2px 6px', borderRadius: 999 }}>
+                      MAX
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 700, marginBottom: 4 }}>
+                  {u.description}
+                </div>
+                {/* Level pips */}
+                <div style={{ display: 'flex', gap: 3 }}>
+                  {Array.from({ length: u.maxLevel }).map((_, li) => (
+                    <motion.div key={li}
+                      animate={li === u.level - 1 && isBought ? { scale: [1, 1.6, 1] } : {}}
+                      transition={{ duration: 0.4, delay: li * 0.04 }}
+                      style={{
+                        width: li < u.level ? 10 : 8, height: li < u.level ? 6 : 4, borderRadius: 999,
+                        background: li < u.level
+                          ? (isMaxed ? '#22C55E' : '#818CF8')
+                          : 'rgba(255,255,255,0.08)',
+                        transition: 'all 0.25s',
+                      }} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Buy button */}
+              {isMaxed ? (
+                <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                  <span style={{ fontSize: '1.1rem' }}>✅</span>
+                  <span style={{ fontSize: '0.5rem', color: '#22C55E', fontWeight: 900, letterSpacing: 0.5 }}>MÁXIMO</span>
+                </div>
+              ) : (
+                <motion.button
+                  whileTap={canAfford ? { scale: 0.92 } : {}}
+                  onClick={() => canAfford && handleBuy(u)}
+                  animate={isBought ? {
+                    boxShadow: ['0 0 0px #818CF800', '0 0 20px #818CF860', '0 0 0px #818CF800'],
+                  } : {}}
+                  style={{
+                    flexShrink: 0, padding: '7px 10px', borderRadius: 10,
+                    background: canAfford
+                      ? isBought
+                        ? 'linear-gradient(135deg, #22C55E, #15803D)'
+                        : 'linear-gradient(135deg, #6366F1, #4F46E5)'
+                      : '#111827',
+                    border: `1px solid ${canAfford ? (isBought ? '#22C55E' : 'rgba(99,102,241,0.5)') : '#1E293B'}`,
+                    color: canAfford ? 'white' : '#334155',
+                    cursor: canAfford ? 'pointer' : 'default',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                    minWidth: 52, transition: 'all 0.2s',
+                  }}>
+                  {isBought ? (
+                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ fontSize: '1rem' }}>✓</motion.span>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: '0.78rem' }}>🪙</span>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 900, color: canAfford ? 'white' : '#334155' }}>{cost}</span>
+                    </>
+                  )}
+                </motion.button>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function HomeLoop() {
   const navigate = useNavigate();
@@ -471,7 +623,7 @@ export default function HomeLoop() {
     player, killCount, totalQuestionsAnswered,
     startRun,
     dailyPlaysUsed, dailyStreak, isPremium, todayStats,
-    recordDailyPlay,
+    recordDailyPlay, permanentUpgrades, purchasePermanent,
   } = useAppStore();
   const pendingCosmeticChest = useAppStore(s => s.pendingCosmeticChest);
   const setPendingCosmeticChest = useAppStore(s => s.setPendingCosmeticChest);
@@ -728,6 +880,13 @@ export default function HomeLoop() {
             </div>
           ))}
         </div>
+
+        {/* ── Upgrades Permanentes ── */}
+        <MetaUpgradesSection
+          upgrades={permanentUpgrades}
+          gold={gold}
+          onBuy={(id) => purchasePermanent(id)}
+        />
 
         {/* ── LOJA DE PODER (Blueprint Shop) ── */}
         <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
