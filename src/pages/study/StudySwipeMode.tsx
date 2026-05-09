@@ -1221,6 +1221,95 @@ function BuildStrip({ runItems, onPress }: { runItems: RunItem[]; onPress: () =>
   );
 }
 
+// ─── Prep Flow Modal ────────────────────────────────────────────────────────────
+function PrepFlowModal({
+  prepFlow,
+  phase,
+  onPhaseChange,
+}: {
+  prepFlow: NonNullable<any['prepFlow']>;
+  phase: 'situation' | 'simple_question' | 'core_rule';
+  onPhaseChange: (newPhase: 'simple_question' | 'core_rule' | 'done') => void;
+}) {
+  const [errorShake, setErrorShake] = useState(false);
+
+  const handleOptionClick = (idx: number) => {
+    if (phase !== 'simple_question') return;
+    if (idx === prepFlow.simpleAnswerIndex) {
+      onPhaseChange('core_rule');
+    } else {
+      setErrorShake(true);
+      setTimeout(() => setErrorShake(false), 400);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 190, background: 'rgba(2,6,18,0.95)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(10px)', padding: 20 }}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+        style={{ width: '100%', maxWidth: 400, background: 'linear-gradient(180deg, #0D1526 0%, #080D1A 100%)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', boxShadow: '0 12px 60px rgba(0,0,0,0.8)', padding: '24px 20px' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3B82F6' }} />
+          <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#93C5FD', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            Base Mínima
+          </span>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {phase === 'situation' && (
+            <motion.div key="sit" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <div style={{ fontSize: '1.05rem', color: '#E2E8F0', lineHeight: 1.6, marginBottom: 24, fontWeight: 600, whiteSpace: 'pre-line' }}>
+                {prepFlow.situation}
+              </div>
+              <motion.button whileTap={{ scale: 0.97 }} onClick={() => onPhaseChange('simple_question')}
+                style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', color: 'white', borderRadius: 16, fontWeight: 900, fontSize: '1.05rem', border: 'none', cursor: 'pointer' }}>
+                Entendi →
+              </motion.button>
+            </motion.div>
+          )}
+
+          {phase === 'simple_question' && (
+            <motion.div key="sq" initial={{ opacity: 0, x: 20 }} animate={errorShake ? { x: [-10, 10, -6, 6, 0] } : { opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <div style={{ fontSize: '1.1rem', color: '#E2E8F0', lineHeight: 1.6, marginBottom: 20, fontWeight: 700 }}>
+                {prepFlow.simpleQuestion}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {prepFlow.simpleOptions.map((opt: string, i: number) => (
+                  <motion.button key={i} whileTap={{ scale: 0.97 }} onClick={() => handleOptionClick(i)}
+                    style={{ padding: '14px 16px', borderRadius: 14, backgroundColor: '#0F172A', border: '1.5px solid rgba(255,255,255,0.1)', color: '#CBD5E1', fontWeight: 600, fontSize: '0.95rem', textAlign: 'left', cursor: 'pointer' }}>
+                    {opt}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {phase === 'core_rule' && (
+            <motion.div key="cr" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <div style={{ background: 'rgba(5,46,22,0.4)', border: '1px solid #166534', padding: '16px', borderRadius: 16, marginBottom: 24 }}>
+                <span style={{ display: 'block', fontSize: '0.65rem', fontWeight: 900, color: '#86EFAC', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+                  📖 Regra-Mãe
+                </span>
+                <div style={{ fontSize: '1rem', color: '#E2E8F0', lineHeight: 1.6, fontWeight: 600, whiteSpace: 'pre-line' }}>
+                  {prepFlow.coreRule}
+                </div>
+              </div>
+              <motion.button whileTap={{ scale: 0.97 }} onClick={() => onPhaseChange('done')}
+                style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10B981, #047857)', color: 'white', borderRadius: 16, fontWeight: 900, fontSize: '1.05rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
+                Enfrentar a Banca ⚔️
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── Question Preview Modal ───────────────────────────────────────────────────
 function QuestionPreviewModal({ question, onReveal }: { question: any; onReveal: () => void }) {
   const topicLabel = question.topic ?? null;
@@ -1413,6 +1502,7 @@ export default function StudySwipeMode() {
   const [qIndex, setQIndex]           = useState(0);
   const [questionRevealed, setQuestionRevealed] = useState(false);
   const [peekModalOpen, setPeekModalOpen] = useState(false); // re-open preview after reveal
+  const [prepPhase, setPrepPhase]     = useState<'none' | 'situation' | 'simple_question' | 'core_rule' | 'done'>('none');
   const [selectedIdx, setSelectedIdx] = useState<null | number>(null);
   const [isFirstHitThisEnemy, setIsFirstHitThisEnemy] = useState(true);
   const [enemyShake, setEnemyShake]   = useState(false);
@@ -1434,7 +1524,15 @@ export default function StudySwipeMode() {
   const prevEnemyModifier = useRef(enemy.modifier);
 
   // Reset question preview on each new question
-  useEffect(() => { setQuestionRevealed(false); setPeekModalOpen(false); }, [qIndex]);
+  useEffect(() => { 
+    setQuestionRevealed(false); 
+    setPeekModalOpen(false); 
+    if (questionQueue[qIndex % Math.max(1, questionQueue.length)]?.prepFlow) {
+      setPrepPhase('situation');
+    } else {
+      setPrepPhase('none');
+    }
+  }, [qIndex, questionQueue]);
 
   // Reset first-hit tracker when a new enemy spawns (enemy.level changes)
   useEffect(() => { setIsFirstHitThisEnemy(true); }, [enemy.level]);
@@ -1927,70 +2025,85 @@ export default function StudySwipeMode() {
               })}
             </div>
 
-            {/* Explanation card */}
-            {selectedOpt && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                style={{
-                  marginTop: 12, padding: '14px 16px', borderRadius: 14,
-                  backgroundColor: selectedOpt.isCorrect ? '#052E16' : '#1A0505',
-                  border: `1.5px solid ${selectedOpt.isCorrect ? '#16A34A' : '#7F1D1D'}`,
-                  color: selectedOpt.isCorrect ? '#86EFAC' : '#FCA5A5',
-                }}>
-                <div style={{ fontWeight: 900, fontSize: '0.85rem', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <BookOpen size={14} />
-                  {selectedOpt.isCorrect ? 'Por quê está certa:' : 'Por quê você errou:'}
-                </div>
-                <div style={{ fontSize: '0.87rem', fontWeight: 600, lineHeight: 1.55, color: selectedOpt.isCorrect ? '#86EFAC' : '#FCA5A5', opacity: 0.9 }}>
-                  {selectedOpt.tip}
-                </div>
-              </motion.div>
-            )}
+            {/* Explanation card moved to modal */}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* ── Continue Button ── */}
+      {/* ── Explanation Pop-up Modal ── */}
       <AnimatePresence>
-        {selectedIdx !== null && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && (
+        {selectedOpt && selectedIdx !== null && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && (
           <motion.div
-            key="continue-btn"
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+            key="explanation-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             style={{
-              flexShrink: 0,
-              padding: '12px 16px',
-              paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
-              backgroundColor: 'rgba(10,15,30,0.98)',
-              backdropFilter: 'blur(12px)',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-            }}>
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={handleContinue}
+              position: 'fixed', inset: 0, zIndex: 180,
+              background: 'rgba(2,6,18,0.85)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              padding: 20
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
               style={{
-                width: '100%', padding: '18px',
-                borderRadius: 16, fontWeight: 900, fontSize: '1.05rem',
-                background: selectedOpt?.isCorrect
-                  ? 'linear-gradient(135deg, #22C55E, #15803D)'
-                  : 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
-                color: 'white',
-                boxShadow: `0 5px 0 ${selectedOpt?.isCorrect ? '#14532D' : '#1e3a8a'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}>
-              {enemy.hp <= 0 && selectedOpt?.isCorrect
-                ? `🎁 Escolher Power-Up! (Lv.${enemy.level + 1})`
-                : selectedOpt?.isCorrect ? '✓ Próxima questão →' : '→ Continuar'}
-            </motion.button>
+                width: '100%', maxWidth: 400,
+                backgroundColor: selectedOpt.isCorrect ? '#052E16' : '#1A0505',
+                border: `1.5px solid ${selectedOpt.isCorrect ? '#16A34A' : '#7F1D1D'}`,
+                borderRadius: 24, padding: '24px 20px',
+                boxShadow: '0 12px 50px rgba(0,0,0,0.8)'
+              }}
+            >
+              <div style={{ fontWeight: 900, fontSize: '1rem', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, color: selectedOpt.isCorrect ? '#86EFAC' : '#FCA5A5' }}>
+                <BookOpen size={18} />
+                {selectedOpt.isCorrect ? 'Por quê está certa:' : 'Por quê você errou:'}
+              </div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.6, color: selectedOpt.isCorrect ? '#86EFAC' : '#FCA5A5', opacity: 0.9, marginBottom: 24 }}>
+                {selectedOpt.tip}
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={handleContinue}
+                style={{
+                  width: '100%', padding: '16px',
+                  borderRadius: 16, fontWeight: 900, fontSize: '1.05rem',
+                  background: selectedOpt.isCorrect
+                    ? 'linear-gradient(135deg, #22C55E, #15803D)'
+                    : 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
+                  color: 'white', border: 'none', cursor: 'pointer',
+                  boxShadow: `0 5px 0 ${selectedOpt.isCorrect ? '#14532D' : '#1e3a8a'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                {enemy.hp <= 0 && selectedOpt.isCorrect
+                  ? `🎁 Escolher Power-Up! (Lv.${enemy.level + 1})`
+                  : selectedOpt.isCorrect ? '✓ Próxima questão →' : '→ Continuar'}
+              </motion.button>
+            </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Prep Flow Modal ── */}
+      <AnimatePresence>
+        {prepPhase !== 'none' && prepPhase !== 'done' && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && currentQ?.prepFlow && (
+          <PrepFlowModal
+            key={`prep-${qIndex}`}
+            prepFlow={currentQ.prepFlow}
+            phase={prepPhase as 'situation' | 'simple_question' | 'core_rule'}
+            onPhaseChange={setPrepPhase}
+          />
         )}
       </AnimatePresence>
 
       {/* ── Question Preview Modal (initial + re-open peek) ── */}
       <AnimatePresence>
-        {(!questionRevealed || peekModalOpen) && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && currentQ && (
+        {(!questionRevealed || peekModalOpen) && (prepPhase === 'none' || prepPhase === 'done') && !isGameOver && !pendingRunUpgrades && !pendingItemDrop && currentQ && (
           <QuestionPreviewModal
             key={`preview-${qIndex}-${peekModalOpen ? 'peek' : 'initial'}`}
             question={currentQ}

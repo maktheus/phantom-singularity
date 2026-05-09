@@ -18,6 +18,14 @@ export interface GeneratedQuestion {
   passage?: string;
   /** Optional title shown above the passage (e.g. "Texto — Machado de Assis") */
   passageTitle?: string;
+  /** Optional preparatory flow to introduce the concept before the actual question */
+  prepFlow?: {
+    situation: string;
+    simpleQuestion: string;
+    simpleOptions: string[];
+    simpleAnswerIndex: number; // Index in the simpleOptions array
+    coreRule: string;
+  };
 }
 
 // ── Real Question Bank ────────────────────────────────────────────────────────
@@ -131,6 +139,13 @@ const REAL_QUESTIONS: GeneratedQuestion[] = [
   {
     concurso: 'administrativo', topic: 'Atos Administrativos', source: 'real',
     text: "Em relação aos atributos dos Atos Administrativos e aos pressupostos de sua validade, é considerado vício de competência insanável que impede a convalidação quando o ato for:",
+    prepFlow: {
+      situation: "João é cidadão comum. Maria é servidora pública.\nJoão quer vender bolo na faculdade. Maria quer criar uma multa nova na prefeitura.",
+      simpleQuestion: "Quem precisa de autorização legal EXPRESSA para agir?",
+      simpleOptions: ["A) João", "B) Maria"],
+      simpleAnswerIndex: 1,
+      coreRule: "Pessoa comum = liberdade (pode fazer o que a lei não proíbe).\nAdministração = autorização legal (só pode fazer o que a lei permite)."
+    },
     options: [
       { text: "Praticado sob delegação em matérias de competência exclusiva por lei.", isCorrect: true, tip: "Matérias exclusivas (ex: edição de atos de caráter normativo) não são delegáveis e não suportam convalidação." },
       { text: "Praticado por agente de fato em situação de urgência para evitar dano social.", isCorrect: false, tip: "Atos de agentes de fato costumam ser preservados com base na teoria da aparência e em proteção a terceiros de boa-fé." },
@@ -155,6 +170,13 @@ const REAL_QUESTIONS: GeneratedQuestion[] = [
   {
     concurso: 'ti', topic: 'Desenvolvimento e JavaScript', source: 'real',
     text: "Muitos editais para desenvolvimento exigem conhecimento sólido sobre a manipulação de Arrays no ES6+. Dado um array e os métodos find() e filter(), assinale a afirmativa correta:",
+    prepFlow: {
+      situation: "Imagine que você tem uma gaveta cheia de meias misturadas. Você precisa separar todas as azuis para guardar, mas quer apenas uma meia preta para usar agora.",
+      simpleQuestion: "Qual método você usaria para pegar apenas a primeira meia preta que encontrar?",
+      simpleOptions: ["A) filter()", "B) find()"],
+      simpleAnswerIndex: 1,
+      coreRule: "find() = Retorna apenas o 1º elemento que encontrar (ou undefined).\nfilter() = Retorna um novo Array com todos os elementos que passarem no teste."
+    },
     options: [
       { text: "O filter() sempre retorna um array (mesmo que vazio), ao passo que o find() retorna o primeiro elemento avaliado como true na função callback ou undefined se nada for encontrado.", isCorrect: true, tip: "Exato! É a diferença clássica: find = 1 valor ou undefined; filter = Array." },
       { text: "O find() itera em todos os elementos obrigatoriamente, enquanto filter() pausa ao achar a primeira ocorrência.", isCorrect: false, tip: "É o inverso. Find() interrompe no 1º match (short-circuit), filter() percorre tudo." },
@@ -166,6 +188,13 @@ const REAL_QUESTIONS: GeneratedQuestion[] = [
   {
     concurso: 'ti', topic: 'Arquitetura Rest', source: 'real',
     text: "Em relação ao padrão arquitetural REST (Representational State Transfer) aplicado na construção de Web APIs, julgue a seguinte situação com base nas constraints (restrições) de Roy Fielding:",
+    prepFlow: {
+      situation: "Pense em um restaurante. O garçom anota seu pedido e vai para a cozinha. Ele não se lembra de você nem do que você pediu antes, a menos que o papel do pedido traga todas as informações necessárias cada vez que ele for chamado.",
+      simpleQuestion: "Como o servidor REST trata as requisições do cliente?",
+      simpleOptions: ["A) Ele guarda o histórico do cliente na memória.", "B) Ele exige que cada requisição contenha tudo o que é necessário para ser processada."],
+      simpleAnswerIndex: 1,
+      coreRule: "Statelessness (Sem Estado): O servidor não guarda estado de sessão do cliente. Toda requisição deve ser independente e autossuficiente."
+    },
     options: [
       { text: "Ser Stateless implica que nenhuma informação de sessão/estado do cliente pode ficar armazenada no Servidor entre os requests.", isCorrect: true, tip: "Statelessness (não manter estado de sessão) é uma restrição vital do REST para escalabilidade horizontal." },
       { text: "REST define que APIs devam trafegar suas payloads exclusivamente em formato JSON.", isCorrect: false, tip: "Falso. REST não impõe formato (pode ser XML, JSON, texto puro). O formato é acordado via content-negotiation." },
@@ -177,6 +206,13 @@ const REAL_QUESTIONS: GeneratedQuestion[] = [
   {
     concurso: 'ti', topic: 'Bancos de Dados SQL vs NoSQL', source: 'real',
     text: "Na escolha entre Bancos de Dados Relacionais e Não Relacionais (NoSQL), os critérios ACID (Atomicidade, Consistência, Isolamento e Durabilidade) e o Teorema CAP (Consistência, Disponibilidade e Partição) guiam a arquitetura. Deste modo, um banco como o MongoDB prioriza:",
+    prepFlow: {
+      situation: "Imagine um sistema global de mensagens que prefere mostrar uma mensagem de 1 minuto atrás (um pouco desatualizada) do que travar o aplicativo inteiro esperando a sincronização perfeita dos servidores.",
+      simpleQuestion: "No Teorema CAP, o que bancos NoSQL distribuídos costumam priorizar em grandes escalas horizontais?",
+      simpleOptions: ["A) Consistência absoluta em todos os nós.", "B) Disponibilidade e tolerância ao particionamento."],
+      simpleAnswerIndex: 1,
+      coreRule: "Bancos NoSQL baseados em documentos geralmente abrem mão do rigor ACID para garantir Disponibilidade e Tolerância à Partição (AP ou CP no Teorema CAP), usando Consistência Eventual."
+    },
     options: [
       { text: "Geralmente CP ou AP no Teorema CAP (com o tempo provou ser configurável), abrindo mão do rigor do esquema ACID em favor da eventual consistency em implementações de largas escalas horizontalmente.", isCorrect: true, tip: "Especialmente bancos baseados em documentos distribuídos não mantêm bloqueios rigorosos de transações ACID por padrão, favorecendo BASE e partições distribuídas." },
       { text: "Atomicidade rigorosa em nível de multi-documentos cruzando coleções por default nativo sem configurações estritas de sessions.", isCorrect: false, tip: "O forte de bancos de documentos não é transação multi-coleção. As transições complexas devem ficar na camada relacional." },
@@ -273,6 +309,13 @@ const REAL_QUESTIONS: GeneratedQuestion[] = [
   {
     concurso: 'ti', topic: 'Segurança da Informação — Criptografia', source: 'real',
     text: 'Sobre criptografia assimétrica (chave pública/privada), assinale a afirmativa CORRETA:',
+    prepFlow: {
+      situation: "Você tem um cofre. Qualquer pessoa pode pegar um cadeado aberto que você distribui, colocar um bilhete no cofre e trancar. Mas só você tem a chave para abrir.",
+      simpleQuestion: "Nesta analogia, o cadeado distribuído e a chave que você guarda representam, respectivamente:",
+      simpleOptions: ["A) Chave Pública e Chave Privada.", "B) Chave Privada e Chave Pública."],
+      simpleAnswerIndex: 0,
+      coreRule: "Criptografia Assimétrica: Cifra-se (tranca) com a Chave Pública do destinatário. Decifra-se (abre) apenas com a Chave Privada."
+    },
     options: [
       { text: 'A chave privada é distribuída livremente, enquanto a chave pública é mantida em sigilo pelo proprietário.', isCorrect: false, tip: 'É o oposto: a chave pública é distribuída; a privada é mantida em sigilo.' },
       { text: 'Uma mensagem cifrada com a chave pública do destinatário só pode ser decifrada com a chave privada correspondente do mesmo destinatário.', isCorrect: true, tip: 'Correto. Esse é o fundamento da confidencialidade na criptografia assimétrica: cifragem com pública, decifragem com privada.' },
@@ -284,6 +327,13 @@ const REAL_QUESTIONS: GeneratedQuestion[] = [
   {
     concurso: 'ti', topic: 'Banco de Dados — SQL', source: 'real',
     text: 'Considere as tabelas PEDIDO (id_pedido, id_cliente, valor) e CLIENTE (id_cliente, nome, cidade). Qual consulta SQL retorna os nomes de clientes que realizaram MAIS DE 3 pedidos com valor superior a R$ 500,00?',
+    prepFlow: {
+      situation: "Você tem uma lista enorme de compras e quer saber quais categorias tiveram mais de 3 itens comprados.",
+      simpleQuestion: "No SQL, depois de agrupar as categorias, qual cláusula você usa para filtrar o 'resultado da contagem'?",
+      simpleOptions: ["A) WHERE count > 3", "B) HAVING count > 3"],
+      simpleAnswerIndex: 1,
+      coreRule: "WHERE filtra as linhas ANTES do agrupamento.\nHAVING filtra os grupos APÓS o agrupamento (GROUP BY) e funções de agregação."
+    },
     options: [
       { text: 'SELECT C.nome FROM CLIENTE C, PEDIDO P WHERE C.id_cliente = P.id_cliente AND P.valor > 500 AND COUNT(*) > 3;', isCorrect: false, tip: 'COUNT() não pode ser usado na cláusula WHERE. Para filtrar resultados de agregação, usa-se HAVING.' },
       { text: 'SELECT C.nome FROM CLIENTE C JOIN PEDIDO P ON C.id_cliente = P.id_cliente WHERE P.valor > 500 GROUP BY C.id_cliente, C.nome HAVING COUNT(P.id_pedido) > 3;', isCorrect: true, tip: 'Correto. O JOIN associa as tabelas, WHERE filtra pedidos > 500, GROUP BY agrupa por cliente, e HAVING filtra os grupos com mais de 3 pedidos.' },
@@ -295,6 +345,13 @@ const REAL_QUESTIONS: GeneratedQuestion[] = [
   {
     concurso: 'ti', topic: 'Redes — Modelo OSI e TCP/IP', source: 'real',
     text: 'No modelo TCP/IP, o protocolo HTTPS opera na camada de Aplicação. Entretanto, o TLS/SSL, que garante a segurança do HTTPS, opera entre as camadas de Aplicação e Transporte (sessão no modelo OSI). Sobre o TLS, assinale a alternativa CORRETA:',
+    prepFlow: {
+      situation: "Dois agentes secretos que não se conhecem usam uma caixa-forte super lenta (criptografia pesada) uma única vez apenas para entregar um dicionário de código rápido. Depois, conversam rapidamente usando o dicionário.",
+      simpleQuestion: "O TLS utiliza a criptografia assimétrica (lenta) apenas no início, para depois usar a simétrica (rápida)?",
+      simpleOptions: ["A) Sim, é exatamente assim.", "B) Não, usa apenas assimétrica."],
+      simpleAnswerIndex: 0,
+      coreRule: "TLS Handshake: Usa criptografia assimétrica para negociar a chave de sessão com segurança. O resto da comunicação usa criptografia simétrica por ser muito mais rápida."
+    },
     options: [
       { text: 'O TLS garante sigilo do conteúdo, mas não autentica a identidade do servidor ao cliente.', isCorrect: false, tip: 'O TLS também autentica o servidor através de certificados digitais X.509, prevenindo ataques man-in-the-middle.' },
       { text: 'O handshake TLS usa criptografia assimétrica para negociar uma chave de sessão simétrica, que é então usada para cifrar os dados da comunicação.', isCorrect: true, tip: 'Correto. A assimétrica (mais lenta) é usada apenas no handshake para estabelecer a chave simétrica (mais rápida) usada durante a sessão.' },
@@ -468,7 +525,14 @@ RETORNE ESTRITAMENTE o JSON abaixo, sem mais nada:
         { "text": "Alternativa C", "isCorrect": false, "tip": "Explicação por que C está errada" },
         { "text": "Alternativa D", "isCorrect": false, "tip": "Explicação por que D está errada" },
         { "text": "Alternativa E", "isCorrect": false, "tip": "Explicação por que E está errada" }
-      ]
+      ],
+      "prepFlow": {
+        "situation": "Breve situação cotidiana ou lúdica ensinando o conceito.",
+        "simpleQuestion": "Pergunta bem fácil, quase óbvia, sobre a situação.",
+        "simpleOptions": ["Opção errada", "Opção certa"],
+        "simpleAnswerIndex": 1,
+        "coreRule": "A regra principal resumida em 2 linhas."
+      }
     }
   ]
 }`;
@@ -497,6 +561,7 @@ RETORNE ESTRITAMENTE o JSON abaixo, sem mais nada:
   return rawQs.slice(0, count).map(q => ({
     text: q.text,
     options: q.options,
+    prepFlow: q.prepFlow,
     topic: topic.split(',')[0],
     source: 'ai' as const,
     concurso,
