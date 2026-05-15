@@ -213,9 +213,10 @@ interface GameState {
   runId: string | null;
   currentQuestions: any[]; // Questão vinda do back
 
-  // Theming + audio
+  // Theming + audio + language
   theme: 'dark' | 'light';
   soundEnabled: boolean;
+  language: 'pt' | 'en';
 
   // Lifetime stats
   totalRuns: number;
@@ -258,6 +259,7 @@ interface GameState {
   setConcurso: (c: ConcursoType) => void;
   toggleTheme: () => void;
   toggleSound: () => void;
+  setLanguage: (lang: 'pt' | 'en') => void;
   addCosmeticItem: (item: CosmeticItem) => void;
   equipCosmetic: (itemId: string) => void;
   unequipCosmetic: (slot: CosmeticSlot) => void;
@@ -466,6 +468,7 @@ export const useAppStore = create<GameState>()(
       currentQuestions: [],
       theme: 'dark' as 'dark' | 'light',
       soundEnabled: true,
+      language: 'pt' as 'pt' | 'en',
       totalRuns: 0,
       bestLevel: 0,
       cosmeticInventory: [],
@@ -891,6 +894,7 @@ export const useAppStore = create<GameState>()(
 
       toggleTheme: () => set(s => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
       toggleSound: () => set(s => ({ soundEnabled: !s.soundEnabled })),
+      setLanguage: (lang) => set({ language: lang }),
 
       addCosmeticItem: (item) => set(s => ({
         cosmeticInventory: [...s.cosmeticInventory, item],

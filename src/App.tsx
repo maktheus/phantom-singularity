@@ -13,6 +13,7 @@ import SettingsPage from './pages/settings/SettingsPage';
 import CosmeticsPage from './pages/cosmetics/CosmeticsPage';
 import { useAuthStore } from './services/authStore';
 import { useAppStore } from './store/useAppStore';
+import ToastContainer from './components/ToastContainer';
 
 // ─── Splash Screen ────────────────────────────────────────────────────────────
 function SplashScreen({ onDone }: { onDone: () => void }) {
@@ -429,6 +430,7 @@ function App() {
 
   return (
     <ErrorBoundary>
+      <ToastContainer />
       <AnimatePresence>
         {!splashDone && <SplashScreen key="splash" onDone={() => setSplashDone(true)} />}
       </AnimatePresence>

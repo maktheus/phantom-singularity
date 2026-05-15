@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Moon, Sun, Volume2, VolumeX, Trash2, Info, RotateCcw, Trophy, Flame } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Volume2, VolumeX, Trash2, Info, RotateCcw, Trophy, Flame, Globe } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTheme } from '../../hooks/useTheme';
 import type { Theme } from '../../hooks/useTheme';
+import { useToastStore } from '../../store/useToastStore';
+import { useT, TRANSLATIONS } from '../../i18n';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -13,17 +15,54 @@ export default function SettingsPage() {
   const toggleTheme = useAppStore(s => s.toggleTheme);
   const soundEnabled = useAppStore(s => s.soundEnabled);
   const toggleSound = useAppStore(s => s.toggleSound);
+  const language = useAppStore(s => s.language);
+  const setLanguage = useAppStore(s => s.setLanguage);
   const [confirmReset, setConfirmReset] = useState(false);
   const respawn = useAppStore(s => s.respawn);
   const resetOnboarding = useAppStore(s => s.resetOnboarding);
+  const { show } = useToastStore();
 
+  const tr = useT(language);
   const isDark = theme === 'dark';
+
+  const handleToggleTheme = () => {
+    toggleTheme();
+    const next = theme === 'dark' ? 'light' : 'dark';
+    show(next === 'dark' ? tr.toastDark : tr.toastLight, 'info', next === 'dark' ? '🌙' : '☀️');
+  };
+
+  const handleToggleSound = () => {
+    toggleSound();
+    show(soundEnabled ? tr.toastSoundOff : tr.toastSoundOn, 'info', soundEnabled ? '🔇' : '🔊');
+  };
+
+  const handleToggleLanguage = () => {
+    const next = language === 'pt' ? 'en' : 'pt';
+    setLanguage(next);
+    const nextTr = useT_static(next);
+    show(next === 'en' ? nextTr.toastLangEn : nextTr.toastLangPt, 'info', '🌐');
+  };
 
   const handleReset = () => {
     if (!confirmReset) { setConfirmReset(true); return; }
     respawn();
     setConfirmReset(false);
+    show(tr.toastResetDone, 'success', '🔄');
     navigate('/home');
+  };
+
+  const handleTutorial = () => {
+    resetOnboarding();
+    try {
+      const raw = localStorage.getItem('phantom-rpg-v3-save');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.state) parsed.state.hasOnboarded = false;
+        localStorage.setItem('phantom-rpg-v3-save', JSON.stringify(parsed));
+      }
+    } catch { /* ignore */ }
+    show(tr.toastTutorial, 'info', '🎓');
+    setTimeout(() => navigate('/onboarding'), 400);
   };
 
   return (
@@ -41,41 +80,75 @@ export default function SettingsPage() {
           padding: '6px 10px', borderRadius: 10, backgroundColor: t.bgCard, border: `1px solid ${t.borderStr}`,
           cursor: 'pointer',
         }}>
-          <ArrowLeft size={15} /> Voltar
+          <ArrowLeft size={15} /> {tr.back}
         </button>
-        <h1 style={{ fontWeight: 900, fontSize: '1.2rem', flex: 1, margin: 0 }}>⚙️ Configurações</h1>
+        <h1 style={{ fontWeight: 900, fontSize: '1.2rem', flex: 1, margin: 0 }}>{tr.title}</h1>
       </div>
 
       <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        {/* ── Aparência ── */}
-        <Section label="Aparência" t={t}>
+        {/* ── Aparência / Appearance ── */}
+        <Section label={tr.appearance} t={t}>
           <SectionRow
             icon={isDark ? <Moon size={18} color="#818CF8" /> : <Sun size={18} color="#FBBF24" />}
-            label={isDark ? 'Modo Escuro' : 'Modo Claro'}
-            sub="Mude a aparência do app"
+            label={isDark ? tr.darkMode : tr.lightMode}
+            sub={tr.themeDesc}
             t={t}
-            right={<ThemeToggle isDark={isDark} onToggle={toggleTheme} />}
+            right={<ThemeToggle isDark={isDark} onToggle={handleToggleTheme} />}
           />
         </Section>
 
-        {/* ── Áudio ── */}
-        <Section label="Áudio" t={t}>
+        {/* ── Áudio / Audio ── */}
+        <Section label={tr.audio} t={t}>
           <SectionRow
             icon={soundEnabled ? <Volume2 size={18} color="#22C55E" /> : <VolumeX size={18} color="#475569" />}
-            label="Sons e Efeitos"
-            sub="Efeitos de acerto, erro e level up"
+            label={tr.soundEffects}
+            sub={tr.soundDesc}
             t={t}
-            right={<SimpleToggle on={soundEnabled} onToggle={toggleSound} color="#22C55E" />}
+            right={<SimpleToggle on={soundEnabled} onToggle={handleToggleSound} color="#22C55E" />}
+          />
+        </Section>
+
+        {/* ── Idioma / Language ── */}
+        <Section label={tr.language} t={t}>
+          <SectionRow
+            icon={<Globe size={18} color="#3B82F6" />}
+            label={tr.languageLabel}
+            sub={tr.languageDesc}
+            t={t}
+            right={
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={handleToggleLanguage}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 0,
+                  borderRadius: 10, overflow: 'hidden',
+                  border: `1px solid ${t.borderStr}`, flexShrink: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{
+                  padding: '7px 12px', fontWeight: 900, fontSize: '0.78rem',
+                  background: language === 'pt' ? '#3B82F6' : t.bgSub,
+                  color: language === 'pt' ? 'white' : t.textMuted,
+                  borderRight: `1px solid ${t.borderStr}`,
+                }}>PT</div>
+                <div style={{
+                  padding: '7px 12px', fontWeight: 900, fontSize: '0.78rem',
+                  background: language === 'en' ? '#3B82F6' : t.bgSub,
+                  color: language === 'en' ? 'white' : t.textMuted,
+                }}>EN</div>
+              </motion.button>
+            }
           />
         </Section>
 
         {/* ── Dados da Run ── */}
-        <Section label="Dados da Run" t={t}>
+        <Section label={tr.runData} t={t}>
           <SectionRow
             icon={<Trash2 size={18} color={confirmReset ? '#EF4444' : '#64748B'} />}
-            label={confirmReset ? '⚠️ Confirmar reset?' : 'Resetar Run Atual'}
-            sub={confirmReset ? 'Toque novamente para confirmar' : 'Volta ao Lv.1 sem perder ouro'}
+            label={confirmReset ? tr.confirmReset : tr.resetRun}
+            sub={confirmReset ? tr.confirmResetDesc : tr.resetRunDesc}
             t={t}
             right={
               <motion.button whileTap={{ scale: 0.94 }}
@@ -87,68 +160,57 @@ export default function SettingsPage() {
                   border: `1px solid ${confirmReset ? '#EF4444' : t.borderStr}`,
                   cursor: 'pointer',
                 }}>
-                {confirmReset ? 'Confirmar' : 'Resetar'}
+                {confirmReset ? tr.confirmBtn : tr.resetBtn}
               </motion.button>
             }
           />
           <Divider t={t} />
           <SectionRow
             icon={<RotateCcw size={18} color="#8B5CF6" />}
-            label="Ver Tutorial Novamente"
-            sub="Recomeça o onboarding do zero"
+            label={tr.tutorial}
+            sub={tr.tutorialDesc}
             t={t}
             right={
               <motion.button whileTap={{ scale: 0.94 }}
-                onClick={() => {
-                  resetOnboarding();
-                  try {
-                    const raw = localStorage.getItem('phantom-rpg-v3-save');
-                    if (raw) {
-                      const parsed = JSON.parse(raw);
-                      if (parsed?.state) parsed.state.hasOnboarded = false;
-                      localStorage.setItem('phantom-rpg-v3-save', JSON.stringify(parsed));
-                    }
-                  } catch { /* ignore */ }
-                  navigate('/onboarding');
-                }}
+                onClick={handleTutorial}
                 style={{
                   padding: '8px 14px', borderRadius: 10, fontWeight: 800, fontSize: '0.82rem',
                   background: 'linear-gradient(135deg,#7C3AED,#4C1D95)',
                   color: 'white', border: 'none', cursor: 'pointer',
                 }}>
-                Ver →
+                {tr.tutorialBtn}
               </motion.button>
             }
           />
         </Section>
 
-        {/* ── Sobre ── */}
-        <Section label="Sobre" t={t}>
+        {/* ── Sobre / About ── */}
+        <Section label={tr.about} t={t}>
           <SectionRow
             icon={<Info size={18} color="#3B82F6" />}
-            label="Phantom Singularity"
-            sub="Versão 1.0.0"
+            label={tr.aboutTitle}
+            sub={tr.version}
             t={t}
             right={<span style={{ fontSize: '0.75rem', color: t.textMuted, fontWeight: 700 }}>v1.0.0</span>}
           />
         </Section>
 
-        {/* ── Sua Jornada ── */}
+        {/* ── Sua Jornada / Journey ── */}
         <div>
           <div style={{ fontSize: '0.68rem', fontWeight: 900, color: t.textMuted, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10, paddingLeft: 4 }}>
-            Sua Jornada
+            {tr.journey}
           </div>
           <div style={{
             padding: '16px', borderRadius: 16,
             background: t.bgCard, border: `1px solid ${t.borderStr}`,
           }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <StatMini icon="📚" label="Questões" storeKey="totalQuestionsAnswered" t={t} />
-              <StatMini icon="💀" label="Kills" storeKey="killCount" t={t} />
-              <StatMini icon="🪙" label="Ouro Total" storeKey="gold" t={t} />
-              <StatMini icon="🏃" label="Runs Totais" storeKey="totalRuns" t={t} />
-              <StatMini icon={<Trophy size={18} color="#FBBF24" />} label="Melhor Nível" storeKey="bestLevel" t={t} />
-              <StatMini icon={<Flame size={18} color="#F97316" />} label="Streak Diário" storeKey="dailyStreak" t={t} />
+              <StatMini icon="📚" label={tr.questions} storeKey="totalQuestionsAnswered" t={t} />
+              <StatMini icon="💀" label={tr.kills} storeKey="killCount" t={t} />
+              <StatMini icon="🪙" label={tr.gold} storeKey="gold" t={t} />
+              <StatMini icon="🏃" label={tr.totalRuns} storeKey="totalRuns" t={t} />
+              <StatMini icon={<Trophy size={18} color="#FBBF24" />} label={tr.bestLevel} storeKey="bestLevel" t={t} />
+              <StatMini icon={<Flame size={18} color="#F97316" />} label={tr.dailyStreak} storeKey="dailyStreak" t={t} />
             </div>
           </div>
         </div>
@@ -156,6 +218,10 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+}
+
+function useT_static(lang: 'pt' | 'en') {
+  return TRANSLATIONS[lang].settings;
 }
 
 function Section({ label, children, t }: { label: string; children: React.ReactNode; t: Theme }) {
